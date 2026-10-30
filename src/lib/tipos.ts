@@ -22,6 +22,7 @@ export interface Casa {
   racha_mensalidade: number;
   racha_diaria: number;
   racha_juiz: number;
+  aplicar_regras_auto: boolean;
 }
 
 export interface Membro {

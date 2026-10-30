@@ -13,6 +13,8 @@ import {
 import { mesDe, hojeISO } from "@/lib/datas";
 import { checar } from "@/lib/db";
 import { garantirOcorrencias } from "@/lib/sincronizar";
+import { aplicarRegrasAutomaticas } from "@/lib/caixa-entrada";
+import { precisaSincronizar, registrarTentativa, sincronizarBancos, type ResumoSincronizacao } from "@/lib/open-finance";
 import { supabase } from "@/lib/supabase";
 import { CASAL, type Casa, type Categoria, type Membro, type Visao } from "@/lib/tipos";
 import { formatarErro } from "./ui";
@@ -35,6 +37,17 @@ export interface Contexto {
   sincronizar: () => Promise<void>;
   nomeDono: (membroId: string | null) => string;
   nomeCategoria: (id: string | null) => string;
+  /** Open Finance: busca os dados dos bancos e aplica as regras automáticas. */
+  sincronizarBancos: () => Promise<ResumoSincronizacao>;
+  bancos: EstadoBancos;
+}
+
+export interface EstadoBancos {
+  sincronizando: boolean;
+  erro?: string;
+  resumo?: ResumoSincronizacao;
+  /** quantas transações foram confirmadas sozinhas por regra aprendida */
+  automaticas?: number;
 }
 
 const Ctx = createContext<Contexto | null>(null);
@@ -101,6 +114,35 @@ export function AppProvider({ inicial, children }: { inicial: DadosBase; childre
     setVersao((v) => v + 1);
   }, [base.casa.id]);
 
+  const [bancos, setBancos] = useState<EstadoBancos>({ sincronizando: false });
+
+  const sincronizarBancosCtx = useCallback(async () => {
+    setBancos((b) => ({ ...b, sincronizando: true, erro: undefined }));
+    try {
+      const resumo = await sincronizarBancos();
+      const automaticas = base.casa.aplicar_regras_auto ? await aplicarRegrasAutomaticas(base.casa, base.membro).catch(() => 0) : 0;
+      await garantirOcorrencias(base.casa.id, hojeISO()).catch(() => {});
+      setVersao((v) => v + 1);
+      setBancos({ sincronizando: false, resumo, automaticas });
+      return resumo;
+    } catch (e) {
+      setBancos((b) => ({ ...b, sincronizando: false, erro: formatarErro(e) }));
+      throw e;
+    }
+  }, [base.casa, base.membro]);
+
+  // Ao abrir o app: sincroniza os bancos em segundo plano se passou de 6 horas.
+  const sincronizarSePreciso = useEffectEvent((precisa: boolean) => {
+    if (!precisa) return;
+    registrarTentativa();
+    sincronizarBancosCtx().catch(() => {});
+  });
+  useEffect(() => {
+    precisaSincronizar(inicial.casa.id)
+      .then(sincronizarSePreciso)
+      .catch(() => {});
+  }, [inicial.casa.id]);
+
   const nomeDono = useCallback(
     (id: string | null) => (id ? (base.membros.find((m) => m.id === id)?.nome ?? "?") : "Casal"),
     [base.membros],
@@ -112,7 +154,20 @@ export function AppProvider({ inicial, children }: { inicial: DadosBase; childre
 
   return (
     <Ctx.Provider
-      value={{ ...base, visao, setVisao, mes, setMes, versao, atualizar, sincronizar, nomeDono, nomeCategoria }}
+      value={{
+        ...base,
+        visao,
+        setVisao,
+        mes,
+        setMes,
+        versao,
+        atualizar,
+        sincronizar,
+        nomeDono,
+        nomeCategoria,
+        sincronizarBancos: sincronizarBancosCtx,
+        bancos,
+      }}
     >
       {children}
     </Ctx.Provider>

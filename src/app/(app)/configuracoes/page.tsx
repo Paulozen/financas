@@ -3,6 +3,7 @@
 import { Copy } from "lucide-react";
 import { useState } from "react";
 import { useApp } from "@/components/app-contexto";
+import { BancosConectados } from "@/components/bancos-conectados";
 import { Cabecalho } from "@/components/cabecalho";
 import { Botao, Campo, CampoValor, Cartao, Erro, formatarErro, Interruptor, Selecao, Titulo } from "@/components/ui";
 import { hojeISO } from "@/lib/datas";
@@ -62,6 +63,9 @@ export default function Configuracoes() {
   return (
     <>
       <Cabecalho titulo="Configurações" semVisao />
+      <div className="mb-4">
+        <BancosConectados />
+      </div>
       <form onSubmit={salvar} className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <Cartao>
           <Titulo>Você e a casa</Titulo>
