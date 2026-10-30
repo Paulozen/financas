@@ -1,0 +1,18 @@
+# segredos e dados reais
+.env*
+amostras/
+
+# dependências e build
+node_modules/
+.next/
+.vercel/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# sistema
+.DS_Store
+Thumbs.db
+npm-debug.log*
