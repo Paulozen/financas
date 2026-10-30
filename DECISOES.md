@@ -38,3 +38,9 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **Excluir regra** pergunta se remove as futuras pendentes; se mantiver, as ocorrências ficam órfãs e o motor não mexe mais nelas.
 - **Pontuais** são ocorrências com `origem_tipo = 'pontual'`, sem regra. O campo "origem" das receitas pontuais fica em `ocorrencias.fonte`.
 - **Filtro de dono** na lista do mês complementa a visão global (útil na visão Casal).
+
+## Fase 3
+
+- **Parcelados:** o motor gera as parcelas restantes dentro da janela de 12 meses (as demais aparecem conforme o tempo passa). Parcela = ocorrência `parcela_contrato` com `parcela_num`. Saldo devedor estimado = total − (pago antes do app + valores reais pagos).
+- **Dívidas flexíveis:** pagamento avulso = ocorrência `pagamento_divida` já paga (desfazer apaga). A meta mensal vira uma ocorrência `meta_divida` por mês, do mês atual em diante, até o saldo projetado zerar. No mês, a meta pendente vale `meta − avulsos do mês`; se os avulsos cobrirem a meta, ela fica paga com valor 0 ("cumprida") e não conta de novo. Metas de meses passados não cumpridas são canceladas automaticamente (não viram "atrasadas").
+- **Cartões:** cada cartão cria uma recorrente variável "Fatura <nome>" (categoria Cartão, ligada por `cartao_id`, ocorrências `fatura`). Editar o cartão atualiza a regra; excluir o cartão apaga a regra (cascade) e pergunta sobre as futuras pendentes.
