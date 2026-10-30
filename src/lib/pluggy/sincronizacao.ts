@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { hojeISO, somarDias } from "../datas";
 import { semAcentos } from "../importacao/texto";
 import type { ClientePluggy } from "./api";
-import { acharJaImportadas, centavos, converterTransacao, nomeConta, type ImportadaPorArquivo, type TransacaoExternaNova } from "./converter";
+import { acharJaImportadas, centavos, converterTransacao, nomeBanco, nomeConta, type ImportadaPorArquivo, type TransacaoExternaNova } from "./converter";
 import { aposSincronizar } from "./pos-sincronizacao";
 
 const DIAS_PRIMEIRA = 90;
@@ -67,13 +67,14 @@ export async function sincronizarCasa(
       : somarDias(hoje, -DIAS_PRIMEIRA);
     try {
       const item = await pluggy.item(itemId);
+      const contasDoItem = await pluggy.contas(itemId);
       checar(
         await sb.from("pluggy_itens").upsert(
           {
             casa_id: casaId,
             pluggy_item_id: itemId,
             dono_membro_id: donoId,
-            banco: item.connector?.name ?? null,
+            banco: nomeBanco(item.connector?.name, contasDoItem),
             status: item.status,
             execution_status: item.executionStatus ?? null,
             erro_codigo: item.error?.code ?? null,
@@ -85,7 +86,7 @@ export async function sincronizarCasa(
         ),
       );
 
-      for (const conta of await pluggy.contas(itemId)) {
+      for (const conta of contasDoItem) {
         resumo.contas++;
         const existente = contasDb.find((c) => c.pluggy_account_id === conta.id);
         const linhaConta = checar(

@@ -30,7 +30,7 @@ const INTERNOS =
   /(troco guardado|dinheiro guardado|dinheiro resgatado|rendimento|cofrinho|aplicacao|resgate|same person transfer|proceeds interests|transfer - internal|investments)/;
 
 /** Pagamento de fatura de cartão (descrição do extrato ou categoria da Pluggy). */
-const PAGAMENTO_FATURA = /(credit card payment|pagamento de fatura|pagto fatura|pgto fatura|fatura do cartao|fatura .*card|pagamento cartao)/;
+const PAGAMENTO_FATURA = /(credit card payment|pagamento (de )?fatura|pagto fatura|pgto fatura|fatura do cartao|fatura .*card|pagamento cartao)/;
 
 /** Fatura pendente para vincular a um pagamento: vencimento até 10 dias de distância, valor mais próximo. */
 export function faturaParaPagamento(t: TransacaoExtrato, pendentes: Ocorrencia[]): Ocorrencia | undefined {

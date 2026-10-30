@@ -57,3 +57,28 @@ Checklist das fases (seção 8 do `PROMPT_CLAUDE_CODE.md`).
 
 - Nenhum bloqueio durante a construção.
 - **Corrigido depois da entrega:** a página provisória da fase 0 (`src/app/page.tsx`) não tinha sido apagada e cobria o Painel em "/". Removida; "/" agora redireciona para o login e foi conferido num navegador headless (Chromium, tamanho de celular, claro e escuro).
+
+## Open Finance (Meu Pluggy)
+
+Integração feita em 6 etapas (detalhes em `DECISOES.md`): reconhecimento da API, sincronização no servidor com a sessão do usuário, caixa de entrada para contas correntes, cartões (faturas, parcelas e previsão), investimentos ligados a reservas e estado das conexões.
+
+### Roteiro de teste da integração
+
+1. **Vercel:** cadastrar `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET`, `PLUGGY_ITEMS_PAULO` e `PLUGGY_ITEMS_LAURA` em Settings → Environment Variables (Production) e fazer um novo deploy. Sem isso o site mostra "Nenhum banco configurado".
+2. **Configurações → Bancos conectados:** tocar em "Sincronizar agora". Conferir os bancos de cada um, com "Em dia", a data da última sincronização e a validade da autorização (~1 ano). Conferir os nomes das contas e os donos (dá para trocar).
+3. **Painel:** deve aparecer o atalho "N transações dos bancos para revisar". A projeção passa a usar o saldo das contas conectadas.
+4. **Caixa de entrada:** conferir as sugestões (salário/OPEA/financiamento de outubro como Vincular, pagamentos de fatura vinculados à fatura, rendimentos e transferências entre contas como Ignorar), selecionar algumas e "Confirmar sugestões selecionadas". Ver em Lançamentos que viraram pagos/novos. Na aba Histórico, desfazer uma.
+5. **Regras automáticas:** ligar "Aplicar regras aprendidas automaticamente", sincronizar de novo e ver no Histórico as marcadas como "automática".
+6. **Cartões:** Compromissos → Cartões → "Detalhes" do Cartão Inter ou Nubank: parcelas em aberto, comprometido por mês, faturas do banco e compras por fatura. Mudar a categoria de uma compra. No Painel, abrir "Cartão" em Gastos por categoria.
+7. **Reservas:** editar uma reserva e vincular a um investimento do banco; o saldo passa a ser automático.
+8. **Importação por arquivo:** continua disponível como alternativa (por exemplo, para um banco sem conexão). Para períodos que já vieram pelo Open Finance, use a caixa de entrada (ver limitações).
+
+### Limitações encontradas
+
+- A API de transações v1 foi desativada (410); só a v2 funciona, e aceita apenas `accountId`, `dateFrom` e `createdAtFrom`.
+- **Dois dos quatro cartões não retornam faturas nem transações** (inclusive o cartão da Laura e um cartão sem uso do Paulo). Para eles o previsto da fatura continua manual.
+- A Pluggy atualiza os bancos a cada 24 horas e não aceita atualização manual no Meu Pluggy: o "Sincronizar agora" traz o que a Pluggy já tem.
+- Autorização de leitura dura um ano; ao renovar, o itemId pode mudar e é preciso atualizar o `.env.local` e a Vercel (o app avisa no Painel com 30 dias de antecedência).
+- Investimentos: o banco da Laura devolve ~170 registros (cada aplicação do cofrinho vira um CDB); só os ativos com saldo aparecem para vincular.
+- O reconhecimento de duplicadas com arquivos é por conta (valor + data quando a conta é a mesma do arquivo). Se um arquivo for importado **depois** de a caixa confirmar o mesmo período, a importação por arquivo não conhece o hash da Pluggy e pode duplicar: prefira a caixa de entrada para períodos já sincronizados.
+- Previsão de fatura futura: no cartão vinculado, o previsto é recalculado a cada sincronização; um ajuste manual vale até a próxima.

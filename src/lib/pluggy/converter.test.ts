@@ -1,6 +1,6 @@
 // Fixtures INVENTADAS no formato da API Pluggy (v2/transactions, bills).
 import { describe, expect, it } from "vitest";
-import { acharJaImportadas, centavos, converterTransacao, dataLocal, itensDoAmbiente, nomeConta } from "./converter";
+import { acharJaImportadas, centavos, converterTransacao, dataLocal, itensDoAmbiente, nomeBanco, nomeConta } from "./converter";
 import type { PluggyFatura, PluggyTransacao } from "./tipos";
 
 const tx = (p: Partial<PluggyTransacao>): PluggyTransacao => ({
@@ -46,6 +46,14 @@ describe("pluggy: conversão", () => {
     // sem fatura conhecida: usa a data prevista da fatura
     const d = converterTransacao(tx({ type: "DEBIT", creditCardMetadata: { billForecastDate: "2027-01-10T00:00:00.000Z" } }), "CREDIT");
     expect(d.fatura_mes).toBe("2027-01");
+  });
+
+  it("nome do banco: usa o conector, ou o nome da conta quando o conector é o MeuPluggy", () => {
+    const contas = [{ type: "CREDIT" as const, name: "GOLD 1234" }, { type: "BANK" as const, name: "BANCO EXEMPLO 01-2" }];
+    expect(nomeBanco("Banco Real Exemplo", contas)).toBe("Banco Real Exemplo");
+    expect(nomeBanco("MeuPluggy", contas)).toBe("Banco Exemplo");
+    expect(nomeBanco("MeuPluggy", [{ type: "BANK", name: "EXEMPLO PAGAMENTOS S.A - Instituição (Conta Pré-paga) 12-3" }])).toBe("Exemplo Pagamentos");
+    expect(nomeBanco("MeuPluggy", [{ type: "BANK", name: "Exemplo Pay Instituição de Pagamento (Conta Pré-paga) 12-3" }])).toBe("Exemplo Pay");
   });
 
   it("nome da conta e itens por dono no ambiente", () => {

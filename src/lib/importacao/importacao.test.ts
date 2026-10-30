@@ -196,6 +196,9 @@ describe("sugestões com dados do Open Finance", () => {
     const pendentes = [fat("longe", "2026-11-30", 250000), fat("a", "2026-11-10", 180000), fat("b", "2026-11-10", 240000)];
     const s = sugerir(t({ tipo: "Credit card payment", descricao: "PAGAMENTO FATURA", valor: -245000 }), { regras: [], pendentes });
     expect(s).toMatchObject({ acao: "vincular", vinculo_id: "b", motivo: "pagamento de fatura" });
+    // descrição de outro banco, sem "de" e com categoria genérica
+    const s2 = sugerir(t({ tipo: "Transfers", descricao: "Pagamento efetuado - Pagamento Fatura - FULANO", valor: -180000 }), { regras: [], pendentes });
+    expect(s2).toMatchObject({ acao: "vincular", vinculo_id: "a" });
   });
 });
 
