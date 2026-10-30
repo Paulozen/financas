@@ -16,15 +16,35 @@ export const TIPOS_ITEM = [
   "outros",
 ];
 
-/** Divide um total em N parcelas mensais iguais; a última absorve o arredondamento. */
-export function dividirParcelas(total: number, n: number, primeira: string): { data: string; valor: number }[] {
+/**
+ * Divide um total em N parcelas mensais iguais; a última absorve o arredondamento.
+ * `dia` é o dia de vencimento desejado (padrão: o da primeira), limitado ao fim de cada mês.
+ */
+export function dividirParcelas(
+  total: number,
+  n: number,
+  primeira: string,
+  dia = Number(primeira.slice(8, 10)),
+): { data: string; valor: number }[] {
   if (n < 1 || total <= 0) return [];
   const base = Math.floor(total / n);
-  const dia = Number(primeira.slice(8, 10));
   return Array.from({ length: n }, (_, i) => ({
     data: i === 0 ? primeira : dataNoMes(somarMeses(mesDe(primeira), i), dia),
     valor: i === n - 1 ? total - base * (n - 1) : base,
   }));
+}
+
+/**
+ * "Dividir o restante até o evento": parcelas mensais iguais no dia escolhido,
+ * da primeira data a partir de hoje até a última que não passa da data do evento.
+ */
+export function parcelasAteEvento(total: number, hoje: string, dataEvento: string, dia: number): { data: string; valor: number }[] {
+  let mes = mesDe(hoje);
+  if (dataNoMes(mes, dia) < hoje) mes = somarMeses(mes, 1);
+  const primeira = dataNoMes(mes, dia);
+  let n = 0;
+  while (dataNoMes(somarMeses(mes, n), dia) <= dataEvento) n++;
+  return dividirParcelas(total, n, primeira, dia);
 }
 
 export interface ResumoProjeto {

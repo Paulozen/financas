@@ -266,14 +266,6 @@ function ItemDetalhe({
         <dd>{item.tipo_item || "—"}</dd>
         <dt className="text-slate-500">Orçado</dt>
         <dd>{formatarReais(item.valor_orcado)}</dd>
-        <dt className="text-slate-500">Contratado</dt>
-        <dd>{formatarReais(item.valor_contratado)}</dd>
-        <dt className="text-slate-500">Já pago antes do app</dt>
-        <dd>{formatarReais(r.pagoAntes)}</dd>
-        <dt className="text-slate-500">Pago (total)</dt>
-        <dd>{formatarReais(r.pago)}</dd>
-        <dt className="text-slate-500">Em parcelas</dt>
-        <dd>{formatarReais(r.parcelado)}</dd>
         {item.contato && (
           <>
             <dt className="text-slate-500">Contato</dt>
@@ -287,6 +279,33 @@ function ItemDetalhe({
           </>
         )}
       </dl>
+      <div className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/50">
+        <dl className="grid grid-cols-2 gap-x-2 gap-y-1">
+          <dt className="text-slate-500">Contratado</dt>
+          <dd className="text-right tabular-nums">{formatarReais(r.contratado)}</dd>
+          <dt className="text-slate-500">Já pago antes do app</dt>
+          <dd className="text-right tabular-nums">− {formatarReais(r.pagoAntes)}</dd>
+          <dt className="text-slate-500">Parcelado</dt>
+          <dd className="text-right tabular-nums">− {formatarReais(r.parcelado)}</dd>
+          <dt className="border-t border-slate-200 pt-1 font-medium dark:border-slate-700">Falta parcelar</dt>
+          <dd className="border-t border-slate-200 pt-1 text-right font-semibold tabular-nums dark:border-slate-700">
+            {formatarReais(r.faltaParcelar)}
+          </dd>
+        </dl>
+        {r.faltaParcelar > 0 && r.contratado > 0 && (
+          <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+            Ainda falta parcelar {formatarReais(r.faltaParcelar)}. Use “+ Parcelas” para lançar o restante.
+          </p>
+        )}
+        {r.faltaParcelar < 0 && (
+          <p className="mt-2 text-xs text-red-700 dark:text-red-300">
+            As parcelas passam do contratado em {formatarReais(-r.faltaParcelar)}. Confira os valores.
+          </p>
+        )}
+        <p className="mt-2 text-xs text-slate-500">
+          Pago até agora: {formatarReais(r.pago)} · falta pagar {formatarReais(r.faltaPagar)}
+        </p>
+      </div>
       <div>
         <Titulo
           acao={
@@ -298,7 +317,7 @@ function ItemDetalhe({
           Parcelas
         </Titulo>
         {parcelas.length === 0 ? (
-          <p className="text-sm text-slate-500">Sem parcelas. Use “+ Parcelas” para gerar N parcelas iguais.</p>
+          <p className="text-sm text-slate-500">Sem parcelas. Use “+ Parcelas” para lançar uma parcela avulsa, N iguais ou dividir até o evento.</p>
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {parcelas.map((o) => (

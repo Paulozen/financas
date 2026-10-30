@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dividirParcelas, resumoProjeto } from "./projetos";
+import { dividirParcelas, parcelasAteEvento, resumoProjeto } from "./projetos";
 import type { Ocorrencia, ProjetoItem } from "./tipos";
 
 describe("projetos", () => {
@@ -12,6 +12,23 @@ describe("projetos", () => {
     ]);
     expect(dividirParcelas(100, 2, "2027-01-31")[1].data).toBe("2027-02-28");
     expect(dividirParcelas(0, 3, "2026-11-01")).toEqual([]);
+  });
+
+  it("dividir o restante até o evento: meses que faltam, dia escolhido, última absorve o arredondamento", () => {
+    // hoje 30/10, dia 10: a de outubro já passou, começa em novembro; evento 18/09/2027 inclui setembro
+    const p = parcelasAteEvento(1507784, "2026-10-30", "2027-09-18", 10);
+    expect(p).toHaveLength(11);
+    expect(p[0]).toEqual({ data: "2026-11-10", valor: 137071 });
+    expect(p.at(-1)).toEqual({ data: "2027-09-10", valor: 1507784 - 137071 * 10 });
+    expect(p.reduce((s, x) => s + x.valor, 0)).toBe(1507784);
+    // dia depois do evento no mês do evento: setembro fica de fora
+    expect(parcelasAteEvento(100000, "2026-10-30", "2027-09-18", 25).at(-1)!.data).toBe("2027-08-25");
+    // dia ainda por vir no mês atual entra; dia 31 é limitado ao fim do mês
+    const q = parcelasAteEvento(90000, "2026-10-05", "2026-12-31", 31);
+    expect(q.map((x) => x.data)).toEqual(["2026-10-31", "2026-11-30", "2026-12-31"]);
+    // evento já passou ou nada a dividir
+    expect(parcelasAteEvento(100000, "2026-10-30", "2026-10-01", 10)).toEqual([]);
+    expect(parcelasAteEvento(0, "2026-10-30", "2027-09-18", 10)).toEqual([]);
   });
 
   const parc = (status: Ocorrencia["status"], prev: number, real: number | null, origem = "a") =>

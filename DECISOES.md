@@ -94,3 +94,10 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - `projeto_itens.valor_pago_antes` (centavos, padrão 0). Não gera ocorrência, então não entra na sobra nem na projeção.
 - Entra em todos os totais do projeto pela mesma função (`resumoProjeto`), usada no detalhe, na lista de projetos e no Progresso do Painel: pago = pago antes + parcelas pagas; falta pagar = contratado − pago (nunca negativo).
 - O resumo também passa a expor `parcelado` (soma das parcelas não canceladas: real se paga, senão previsto) e `faltaParcelar` = contratado − pago antes − parcelado (pode ser negativo).
+
+## Projetos: parcelas flexíveis
+
+- O detalhe do item oferece três formas de lançar parcelas: **avulsa** (data e valor próprios, uma de cada vez), **N iguais** (mensais a partir de uma data) e **até o evento**.
+- **"Até o evento":** primeira parcela no dia escolhido do mês atual (ou do próximo, se esse dia já passou) e uma por mês enquanto a data não passar da data do evento do projeto. Valor sugerido = falta parcelar; a última parcela absorve o arredondamento. Sem data do evento, a opção pede para defini-la.
+- **Painel do item:** contratado − já pago antes do app − parcelado = falta parcelar. Aviso âmbar se ainda falta parcelar e vermelho se as parcelas passam do contratado.
+- Editar e excluir parcelas pendentes continuam pelo detalhe da parcela (sem mudança).

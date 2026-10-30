@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { hojeISO } from "@/lib/datas";
+import { formatarData, hojeISO } from "@/lib/datas";
 import { checar } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
-import { dividirParcelas, TIPOS_ITEM } from "@/lib/projetos";
+import { dividirParcelas, parcelasAteEvento, TIPOS_ITEM } from "@/lib/projetos";
 import { supabase } from "@/lib/supabase";
 import type { Projeto, ProjetoItem, StatusItem } from "@/lib/tipos";
 import { useApp } from "./app-contexto";
@@ -165,20 +165,32 @@ export function FormParcelas({
   aoFechar: () => void;
 }) {
   const { casa, categorias, sincronizar } = useApp();
-  const [modo, setModo] = useState<"iguais" | "uma">("iguais");
+  const hoje = hojeISO();
+  const [modo, setModo] = useState<"uma" | "iguais" | "evento">("uma");
   const [total, setTotal] = useState(Math.max(0, sugestao));
   const [n, setN] = useState("1");
-  const [primeira, setPrimeira] = useState(hojeISO());
+  const [primeira, setPrimeira] = useState(hoje);
+  const [dia, setDia] = useState(String(Number(hoje.slice(8, 10))));
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
-  const qtd = modo === "uma" ? 1 : Math.max(0, Math.floor(Number(n) || 0));
-  const previa = dividirParcelas(total, qtd, primeira || hojeISO());
+  const diaNum = Math.floor(Number(dia) || 0);
+  const diaOk = diaNum >= 1 && diaNum <= 31;
+  const previa =
+    modo === "evento"
+      ? projeto.data_evento && diaOk
+        ? parcelasAteEvento(total, hoje, projeto.data_evento, diaNum)
+        : []
+      : dividirParcelas(total, modo === "uma" ? 1 : Math.max(0, Math.floor(Number(n) || 0)), primeira || hoje);
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
-    if (!previa.length) return setErro("Informe valor e número de parcelas.");
-    if (qtd > 120) return setErro("No máximo 120 parcelas.");
+    setErro(null);
+    if (modo === "evento" && !projeto.data_evento) return setErro("Defina a data do evento no projeto primeiro.");
+    if (modo === "evento" && !diaOk) return setErro("Dia de vencimento deve ser entre 1 e 31.");
+    if (!previa.length)
+      return setErro(modo === "evento" && total > 0 ? "Não há mais meses até a data do evento." : "Informe o valor e o número de parcelas.");
+    if (previa.length > 120) return setErro("No máximo 120 parcelas.");
     setSalvando(true);
     try {
       const categoria = categorias.find((c) => c.tipo === "saida" && c.nome === "Casamento")?.id ?? null;
@@ -214,21 +226,39 @@ export function FormParcelas({
       <form onSubmit={salvar} className="flex flex-col gap-4">
         <Abas
           abas={[
-            { valor: "iguais", rotulo: "N parcelas iguais" },
-            { valor: "uma", rotulo: "Uma parcela" },
+            { valor: "uma", rotulo: "Avulsa" },
+            { valor: "iguais", rotulo: "N iguais" },
+            { valor: "evento", rotulo: "Até o evento" },
           ]}
           atual={modo}
           aoMudar={setModo}
         />
-        <CampoValor rotulo={modo === "uma" ? "Valor" : "Valor total a parcelar"} valor={total} aoMudar={setTotal} />
+        {modo === "evento" && (
+          <p className="text-sm text-slate-500">
+            {projeto.data_evento
+              ? `Divide o valor em parcelas mensais iguais até ${formatarData(projeto.data_evento)} (data do evento).`
+              : "Defina a data do evento no projeto para usar esta opção."}
+          </p>
+        )}
+        <CampoValor
+          rotulo={modo === "uma" ? "Valor" : "Valor total a parcelar"}
+          valor={total}
+          aoMudar={setTotal}
+          dica={sugestao > 0 && modo !== "uma" ? `Falta parcelar: ${formatarReais(sugestao)}` : undefined}
+        />
         {modo === "iguais" && (
           <Campo rotulo="Número de parcelas" type="number" inputMode="numeric" min={1} max={120} value={n} onChange={(e) => setN(e.target.value)} />
         )}
-        <Campo rotulo={modo === "uma" ? "Data" : "Data da primeira"} type="date" value={primeira} onChange={(e) => setPrimeira(e.target.value)} />
+        {modo === "evento" ? (
+          <Campo rotulo="Dia do vencimento" type="number" inputMode="numeric" min={1} max={31} value={dia} onChange={(e) => setDia(e.target.value)} />
+        ) : (
+          <Campo rotulo={modo === "uma" ? "Data" : "Data da primeira"} type="date" value={primeira} onChange={(e) => setPrimeira(e.target.value)} />
+        )}
         {previa.length > 1 && (
           <p className="text-sm text-slate-500">
             {previa.length}× de {formatarReais(previa[0].valor)}
-            {previa.at(-1)!.valor !== previa[0].valor && ` (última ${formatarReais(previa.at(-1)!.valor)})`}, todo dia {primeira.slice(8, 10)}.
+            {previa.at(-1)!.valor !== previa[0].valor && ` (última ${formatarReais(previa.at(-1)!.valor)})`}, de{" "}
+            {formatarData(previa[0].data)} a {formatarData(previa.at(-1)!.data)}.
           </p>
         )}
         <Erro mensagem={erro} />
