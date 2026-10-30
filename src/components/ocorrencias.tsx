@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { Check } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   aceitaEstimativa,
   ajustarPrevisto,
@@ -299,7 +299,7 @@ export function SeletorCategoria({
   aoMudar: (v: string) => void;
   categorias: { id: string; nome: string; tipo: string; ativa: boolean }[];
 }) {
-  const id = "cat-" + tipo;
+  const id = useId();
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-sm font-medium text-slate-700 dark:text-slate-300">

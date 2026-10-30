@@ -2,7 +2,7 @@
 
 import { Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Botao, Campo, Cartao, Erro, formatarErro } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
 
@@ -12,6 +12,15 @@ export default function Login() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [entrando, setEntrando] = useState(false);
+
+  // Já logado: vai direto para o app.
+  useEffect(() => {
+    supabase()
+      .auth.getSession()
+      .then(({ data }) => {
+        if (data.session) router.replace("/");
+      });
+  }, [router]);
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault();

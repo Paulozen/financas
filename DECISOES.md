@@ -77,3 +77,9 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **Confirmação atômica** pela função `confirmar_importacao` (security invoker, RLS vale): registra a importação, as transações (com `on conflict do nothing` para duplicadas), cria/vincula ocorrências ou movimentos do racha, aprende regras e guarda as contagens.
 - **"Importar a partir de [data]"** exclui as linhas anteriores (não são gravadas; podem ser importadas depois).
 - **Teste manual com as amostras reais** feito por um teste temporário que imprimiu só contagens (não versionado): os dois arquivos foram reconhecidos pelo perfil PicPay, sem linhas descartadas e com hashes todos distintos.
+
+## Fase 8
+
+- **README** reescrito em português (rodar localmente, migrações, Vercel, instalar no celular).
+- **Login** redireciona para o app quando já existe sessão.
+- Verificado: a API REST nega acesso anônimo (401) e a URL do banco (`SUPABASE_DB_URL`) não aparece no código enviado ao navegador.
