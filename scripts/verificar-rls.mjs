@@ -22,6 +22,18 @@ try {
   await como(users[1].id);
   await c.query("select entrar_casa($1, 'Teste B')", [codigo_convite]);
   console.log("B após entrar vê ocorrencias:", (await c.query("select count(*) from ocorrencias")).rows[0].count);
+  // Importação (dados inventados): primeira vez grava, segunda vez tudo duplicado.
+  await como(users[0].id);
+  const { rows: [{ id: membroA }] } = await c.query("select id from membros where user_id = $1", [users[0].id]);
+  const linhas = [
+    { hash: "h1", data: "2026-10-01", descricao: "Teste novo", valor: -1000, acao: "novo", aprender: true, padrao: "teste novo" },
+    { hash: "h2", data: "2026-10-02", descricao: "Teste racha", valor: 2500, acao: "racha", racha_tipo: "mensalidade" },
+    { hash: "h3", data: "2026-10-03", descricao: "Teste ignorar", valor: 5, acao: "ignorar" },
+  ];
+  const imp1 = await c.query("select confirmar_importacao($1, $2, 'teste.csv', 'teste', $3) as r", [casa, membroA, JSON.stringify(linhas)]);
+  const imp2 = await c.query("select confirmar_importacao($1, $2, 'teste.csv', 'teste', $3) as r", [casa, membroA, JSON.stringify(linhas)]);
+  console.log("importação 1:", JSON.stringify(imp1.rows[0].r), "| 2:", JSON.stringify(imp2.rows[0].r));
+  console.log("regras aprendidas:", (await c.query("select count(*) from regras_importacao")).rows[0].count);
   await como(null);
   await c.query("reset role"); await c.query("set local role anon");
   console.log("anon casas:", await c.query("select count(*) from casas").then(r => r.rows[0].count).catch(e => "erro: " + e.message));

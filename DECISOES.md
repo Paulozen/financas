@@ -63,3 +63,17 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **Realizado** = ocorrências pagas com vencimento no mês (mesma base do previsto, para as duas linhas serem comparáveis).
 - **Projeção:** mês atual + 11. Pendentes atrasadas de meses anteriores entram no mês atual. Saldo acumulado = saldo informado + o que ainda não está refletido nele (pendentes e pagamentos com data posterior à do saldo).
 - **Gastos por categoria** em barras horizontais simples (HTML), com a cor da categoria e percentual; a projeção tem também uma visão em tabela.
+
+## Fase 7
+
+- **Leitura no navegador:** o arquivo nunca sai do aparelho; só as linhas confirmadas vão para o banco. `exceljs` é carregado sob demanda (chunk separado).
+- **Codificação:** BOM UTF-8/UTF-16; sem BOM tenta UTF-8 estrito e cai para Windows-1252 (Latin-1).
+- **Cabeçalho:** primeira linha (entre as 30 primeiras) com uma coluna "data" e outra conhecida (valor, histórico, descrição, crédito, débito, tipo, origem...). A assinatura (nomes das colunas normalizados) identifica o perfil.
+- **Perfil pronto "PicPay":** data, hora, tipo, origem/destino, valor. Descrição = "tipo · origem/destino". Perfis criados na tela de mapeamento ficam em `perfis_importacao` (por casa).
+- **XLSX de coluna única:** se todas as linhas têm só uma célula e elas parecem CSV, o texto é reprocessado como CSV.
+- **Deduplicação:** OFX usa o FITID. Demais: SHA-256 de (perfil + dono do extrato, data, hora, tipo, descrição, valor); linhas idênticas no mesmo arquivo ganham índice de repetição (#2, #3...). O dono do extrato entra na "conta" para que extratos de pessoas diferentes no mesmo banco não colidam — por isso, ao reimportar, escolha o mesmo dono.
+- **Sugestões, em ordem:** regra aprendida → movimento interno (Troco/Dinheiro guardado, Dinheiro resgatado, Rendimento, cofrinho) = Ignorar → pendente com valor próximo (até 10% ou R$ 5) e vencimento ±5 dias = Vincular → se o extrato é de quem organiza o racha e o valor é exatamente a mensalidade ou a diária = Racha → Novo lançamento.
+- **Regras aprendidas** são gravadas para Racha, Ignorar e Novo com categoria (não para Vincular), pelo padrão da descrição normalizada (sem acentos, números e pontuação).
+- **Confirmação atômica** pela função `confirmar_importacao` (security invoker, RLS vale): registra a importação, as transações (com `on conflict do nothing` para duplicadas), cria/vincula ocorrências ou movimentos do racha, aprende regras e guarda as contagens.
+- **"Importar a partir de [data]"** exclui as linhas anteriores (não são gravadas; podem ser importadas depois).
+- **Teste manual com as amostras reais** feito por um teste temporário que imprimiu só contagens (não versionado): os dois arquivos foram reconhecidos pelo perfil PicPay, sem linhas descartadas e com hashes todos distintos.
