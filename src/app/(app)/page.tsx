@@ -16,36 +16,63 @@ import { reaisCurto, useCoresGrafico } from "@/lib/graficos";
 import { gastosPorCategoria, projecao, saldoEmConta, sobraDoMes, vencimentos, type MesProjecao } from "@/lib/painel";
 import type { ContaExterna } from "@/lib/caixa-entrada";
 import { gastosDaFatura, type CompraCartao } from "@/lib/pluggy/cartao";
+import { avisosConexao, COMO_RENOVAR, type EstadoItem } from "@/lib/pluggy/conexoes";
 import { resumoProjeto } from "@/lib/projetos";
 import { saldoRacha } from "@/lib/racha";
 import { totalGuardado } from "@/lib/reservas";
 import type { Contrato, Divida, Ocorrencia, Projeto, ProjetoItem, RachaMovimento, Reserva, ReservaSaldo } from "@/lib/tipos";
 
 export default function Painel() {
-  const { casa, mes, visao, categorias } = useApp();
+  const { casa, mes, visao, categorias, nomeDono } = useApp();
   const [aberta, setAberta] = useState<Ocorrencia | null>(null);
   const [pagando, setPagando] = useState<Ocorrencia | null>(null);
   const hoje = hojeISO();
 
   const { dados, erro, carregando } = useCarregar("painel", async () => {
-    const [ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha, contasExternas, aRevisar, comprasCartao] =
-      await Promise.all([
-        buscarTodos<Ocorrencia>("ocorrencias", casa.id, undefined, "vencimento"),
-        buscarTodos<Contrato>("contratos", casa.id),
-        buscarTodos<Divida>("dividas", casa.id),
-        buscarTodos<Projeto>("projetos", casa.id, (q) => q.eq("status", "ativo")),
-        buscarTodos<ProjetoItem>("projeto_itens", casa.id),
-        buscarTodos<Reserva>("reservas", casa.id),
-        buscarTodos<ReservaSaldo>("reserva_saldos", casa.id),
-        casa.racha_ativo ? buscarTodos<RachaMovimento>("racha_movimentos", casa.id) : Promise.resolve([]),
-        buscarTodos<ContaExterna>("contas_externas", casa.id),
-        buscarTodos<{ conta_externa_id: string }>("transacoes_externas", casa.id, (q) => q.eq("situacao", "pendente"), "data"),
-        buscarTodos<CompraCartao & { conta_externa_id: string }>("transacoes_externas", casa.id, (q) => q.eq("situacao", "cartao"), "data"),
-      ]);
+    const [
+      ocorrencias,
+      contratos,
+      dividas,
+      projetos,
+      itens,
+      reservas,
+      saldos,
+      racha,
+      contasExternas,
+      aRevisar,
+      comprasCartao,
+      itensBancos,
+    ] = await Promise.all([
+      buscarTodos<Ocorrencia>("ocorrencias", casa.id, undefined, "vencimento"),
+      buscarTodos<Contrato>("contratos", casa.id),
+      buscarTodos<Divida>("dividas", casa.id),
+      buscarTodos<Projeto>("projetos", casa.id, (q) => q.eq("status", "ativo")),
+      buscarTodos<ProjetoItem>("projeto_itens", casa.id),
+      buscarTodos<Reserva>("reservas", casa.id),
+      buscarTodos<ReservaSaldo>("reserva_saldos", casa.id),
+      casa.racha_ativo ? buscarTodos<RachaMovimento>("racha_movimentos", casa.id) : Promise.resolve([]),
+      buscarTodos<ContaExterna>("contas_externas", casa.id),
+      buscarTodos<{ conta_externa_id: string }>("transacoes_externas", casa.id, (q) => q.eq("situacao", "pendente"), "data"),
+      buscarTodos<CompraCartao & { conta_externa_id: string }>("transacoes_externas", casa.id, (q) => q.eq("situacao", "cartao"), "data"),
+      buscarTodos<EstadoItem>("pluggy_itens", casa.id),
+    ]);
     // Caixa de entrada: só contas correntes ativas.
     const bancosAtivos = new Set(contasExternas.filter((c) => c.ativa && c.tipo === "BANK").map((c) => c.id));
     const pendentesCaixa = aRevisar.filter((t) => bancosAtivos.has(t.conta_externa_id)).length;
-    return { ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha, contasExternas, pendentesCaixa, comprasCartao };
+    return {
+      ocorrencias,
+      contratos,
+      dividas,
+      projetos,
+      itens,
+      reservas,
+      saldos,
+      racha,
+      contasExternas,
+      pendentesCaixa,
+      comprasCartao,
+      itensBancos,
+    };
   });
 
   if (carregando && !dados)
@@ -73,6 +100,7 @@ export default function Painel() {
   );
   const proj = projecao(ocorrencias, hoje, saldoHoje);
   const venc = vencimentos(ocorrencias, hoje);
+  const avisosBancos = avisosConexao(dados.itensBancos, hoje);
   // Compras dos cartões vinculados na fatura do mês (dono do cartão conforme a visão).
   const contasCartao = new Map(
     dados.contasExternas.filter((c) => c.tipo === "CREDIT" && c.ativa && c.cartao_id).map((c) => [c.id, c.dono_membro_id]),
@@ -133,6 +161,28 @@ export default function Painel() {
     <>
       <Cabecalho titulo="Painel" />
       <SeletorMes />
+      {avisosBancos.length > 0 && (
+        <div
+          role="alert"
+          className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <p className="flex items-center gap-2 font-semibold">
+            <AlertTriangle className="size-4" aria-hidden /> Conexão com {avisosBancos.length === 1 ? "um banco precisa" : "bancos precisa"}{" "}
+            de atenção
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {avisosBancos.map((a) => (
+              <li key={a.pluggy_item_id}>
+                {a.banco ?? "Banco"} ({nomeDono(a.dono_membro_id)}): {a.texto}
+              </li>
+            ))}
+          </ul>
+          <details className="mt-1">
+            <summary className="cursor-pointer font-medium">Como renovar</summary>
+            <p className="mt-1">{COMO_RENOVAR}</p>
+          </details>
+        </div>
+      )}
       {dados.pendentesCaixa > 0 && (
         <Link
           href="/caixa"

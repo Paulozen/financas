@@ -159,3 +159,9 @@ Só estrutura; nenhum nome, descrição, valor ou número de conta real.
 - Reserva vinculada: a cada sincronização o saldo do investimento vai para o histórico (`reserva_saldos`), um registro por dia (se já houver o do dia, é atualizado; sincronizar duas vezes não duplica). Se mais de um investimento for ligado à mesma reserva, os saldos são somados. Ao vincular, o saldo do dia já é gravado na hora.
 - Reservas sem vínculo continuam manuais. A reserva vinculada mostra o selo "saldo automático (Open Finance)".
 - Validado com os dados reais numa transação desfeita.
+
+## Open Finance — Etapa 6: estado das conexões
+
+- **Configurações → Bancos conectados:** itens agrupados por dono, cada um com estado em português (`descreverEstado`: em dia, atualizando, desatualizado, erro de login, autorização expirada/revogada, item não encontrado), última sincronização e data de expiração da autorização; dentro de cada item, as contas com nome editável, dono (troca grava `dono_manual`), ativa e, nos cartões, o vínculo com um cartão do app ou "Criar cartão com esta conta".
+- **Painel:** aviso quando a autorização vence em menos de 30 dias, já venceu (inclusive `USER_AUTHORIZATION_EXPIRED`) ou o item tem erro, com o passo a passo de renovação (dashboard.pluggy.ai → Applications → aplicação → Demo → Connect Account → MeuPluggy) e o lembrete de atualizar `PLUGGY_ITEMS_<NOME>` no .env e na Vercel se o itemId mudar.
+- **README** documenta as variáveis `PLUGGY_*` e que precisam ser cadastradas também na Vercel.

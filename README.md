@@ -18,6 +18,17 @@ Pré-requisitos: Node.js 20 ou mais novo.
 
    `SUPABASE_DB_URL` só é usada pelo script de migrações; nunca vai para o navegador nem para a Vercel.
 
+   Para o Open Finance (opcional), acrescente também:
+
+   ```
+   PLUGGY_CLIENT_ID=<Client ID da aplicação no dashboard.pluggy.ai>
+   PLUGGY_CLIENT_SECRET=<Client Secret>
+   PLUGGY_ITEMS_PAULO=<itemId>,<itemId>
+   PLUGGY_ITEMS_LAURA=<itemId>
+   ```
+
+   Cada `PLUGGY_ITEMS_<NOME>` lista os itens (um por banco) de um membro, pelo nome de exibição dele no app; o dono das contas e transações vem daí (pode ser trocado na tela). As listas podem crescer ou ficar vazias. Essas variáveis só existem no servidor (não começam com `NEXT_PUBLIC_`).
+
 2. Instale e rode:
 
    ```
@@ -46,11 +57,23 @@ Outros comandos:
 - Para mudar o banco, crie um novo arquivo com o próximo número (ex.: `003_algo.sql`) e rode `npm run db:migrate`. Não edite migrações já aplicadas.
 - O build da Vercel não roda migrações: rode o comando localmente antes de publicar uma versão que dependa delas.
 
+## Open Finance (Meu Pluggy)
+
+O app lê as contas pelo Meu Pluggy (uso pessoal, gratuito), a partir de uma rota do servidor (`/api/pluggy/sincronizar`) que usa a sessão do usuário logado.
+
+- **Sincronização:** botão "Sincronizar agora" em Configurações → Bancos conectados e, ao abrir o app, automática se a última tiver mais de 6 horas. A Pluggy atualiza os bancos a cada 24 horas; o app não força atualização.
+- **Contas correntes** → Caixa de entrada (Mais → Caixa de entrada), com sugestões e confirmação em lote. O saldo delas vira o "saldo em conta" da projeção.
+- **Cartões** → vincule cada cartão do banco a um cartão do app em Configurações. As faturas fechadas atualizam a ocorrência da fatura; as futuras são previstas com as parcelas conhecidas + média das compras à vista.
+- **Investimentos** → vincule a uma reserva (formulário da reserva) para o saldo atualizar sozinho.
+- **Autorização:** vale um ano. Para renovar: dashboard.pluggy.ai → Applications → sua aplicação → Demo → Connect Account → MeuPluggy. Se o itemId mudar, atualize `PLUGGY_ITEMS_<NOME>` no `.env.local` e na Vercel.
+- A importação de extratos por arquivo continua disponível como alternativa.
+
 ## Publicar na Vercel
 
 O projeto já está ligado à Vercel e ao GitHub: cada `git push` na branch principal gera um deploy.
 
 1. Em **Vercel → Project → Settings → Environment Variables**, confira se existem `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` (a integração com o Supabase costuma criar). **Não** cadastre `SUPABASE_DB_URL` lá.
+   Para o Open Finance funcionar no site publicado, cadastre também `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET` e cada `PLUGGY_ITEMS_<NOME>` (ambiente Production) e faça um novo deploy.
 2. No Supabase, em **Authentication → URL Configuration**, coloque o domínio da Vercel (ex.: `https://financas-xxx.vercel.app`) em **Site URL**.
 3. O cadastro público fica desativado; os dois usuários são criados no Supabase Auth (e-mail e senha).
 
