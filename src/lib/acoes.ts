@@ -10,6 +10,8 @@ export interface DadosPagamento {
   observacao: string;
   /** Parcelas de contrato e despesas variáveis: usar como estimativa das próximas. */
   usarComoEstimativa?: boolean;
+  /** pago com dinheiro guardado: fora da sobra e da projeção */
+  comReserva?: boolean;
 }
 
 /** Pode oferecer "usar este valor como estimativa das próximas"? */
@@ -23,7 +25,7 @@ export async function pagar(o: Ocorrencia, d: DadosPagamento) {
   checar(
     await sb
       .from("ocorrencias")
-      .update({ status: "pago", valor_real: d.valor, pago_em: d.data, observacao: d.observacao || null })
+      .update({ status: "pago", valor_real: d.valor, pago_em: d.data, observacao: d.observacao || null, paga_com_reserva: !!d.comReserva })
       .eq("id", o.id),
   );
   if (d.usarComoEstimativa && o.origem_id) {
@@ -48,6 +50,10 @@ export async function desfazerPagamento(o: Ocorrencia) {
       .update({ status: "pendente", valor_real: null, pago_em: null, transacao_importada_id: null })
       .eq("id", o.id),
   );
+}
+
+export async function marcarComReserva(o: Ocorrencia, comReserva: boolean) {
+  checar(await supabase().from("ocorrencias").update({ paga_com_reserva: comReserva }).eq("id", o.id));
 }
 
 export async function cancelarOcorrencia(o: Ocorrencia, cancelar: boolean) {

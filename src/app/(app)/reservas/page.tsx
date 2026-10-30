@@ -27,7 +27,7 @@ import { formatarData, formatarDiaMes, hojeISO } from "@/lib/datas";
 import { buscarTodos, checar } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
 import { reaisCurto, useCoresGrafico } from "@/lib/graficos";
-import { saldoAtual, serieReservas, totalGuardado } from "@/lib/reservas";
+import { resumoGuardado, saldoAtual, serieReservas, type ContaGuardada } from "@/lib/reservas";
 import { supabase } from "@/lib/supabase";
 import type { Reserva, ReservaSaldo } from "@/lib/tipos";
 
@@ -37,16 +37,18 @@ export default function Reservas() {
   const [atualizando, setAtualizando] = useState<Reserva | null>(null);
   const [historico, setHistorico] = useState<Reserva | null>(null);
   const { dados, erro, carregando } = useCarregar("reservas", async () => {
-    const [reservas, saldos, investimentos] = await Promise.all([
+    const [reservas, saldos, investimentos, contas] = await Promise.all([
       buscarTodos<Reserva>("reservas", casa.id, undefined, "nome"),
       buscarTodos<ReservaSaldo>("reserva_saldos", casa.id, undefined, "data"),
       buscarTodos<Investimento>("investimentos_externos", casa.id, undefined, "nome"),
+      buscarTodos<ContaGuardada>("contas_externas", casa.id, undefined, "nome"),
     ]);
-    return { reservas, saldos, investimentos };
+    return { reservas, saldos, investimentos, contas };
   });
   const reservas = daVisao(dados?.reservas ?? [], visao);
   const saldos = dados?.saldos ?? [];
   const ativas = reservas.filter((r) => r.ativa);
+  const guardado = resumoGuardado(dados?.reservas ?? [], saldos, dados?.contas ?? [], visao);
 
   return (
     <>
@@ -59,8 +61,30 @@ export default function Reservas() {
           <div className="lg:grid lg:grid-cols-[18rem_1fr] lg:items-start lg:gap-4">
             <Cartao className="mb-4 text-center lg:py-10">
               <p className="text-sm text-slate-500">Total guardado</p>
-              <Dinheiro valor={totalGuardado(reservas, saldos)} className="text-3xl font-bold" />
+              <Dinheiro valor={guardado.total} className="text-3xl font-bold" />
               <p className="mt-1 text-xs text-slate-500">Não entra na sobra do mês nem na projeção.</p>
+              <div className="mt-3 flex flex-col gap-2 text-left text-sm">
+                {[
+                  { titulo: "Em conta", total: guardado.totalConta, itens: guardado.emConta },
+                  { titulo: "Reservas", total: guardado.totalReservas, itens: guardado.reservas },
+                ].map((g) => (
+                  <div key={g.titulo}>
+                    <p className="flex justify-between font-medium">
+                      {g.titulo} <Dinheiro valor={g.total} />
+                    </p>
+                    <ul className="text-xs text-slate-500">
+                      {g.itens.map((i) => (
+                        <li key={i.id} className="flex justify-between gap-2">
+                          <span className="truncate">
+                            {i.nome} · {nomeDono(i.dono_membro_id)}
+                          </span>
+                          <Dinheiro valor={i.valor} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             </Cartao>
 
             {ativas.length > 0 && saldos.some((s) => ativas.some((r) => r.id === s.reserva_id)) && (

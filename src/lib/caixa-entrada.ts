@@ -121,6 +121,7 @@ export function paraConfirmacao(l: LinhaPrevia) {
     vinculo_id: l.acao === "vincular" ? l.vinculo_id : null,
     padrao: l.padrao,
     aprender: l.acao === "racha" || l.acao === "ignorar" || (l.acao === "novo" && !!l.categoria_id),
+    com_reserva: (l.acao === "novo" || l.acao === "vincular") && l.t.valor < 0 && !!l.com_reserva,
   };
 }
 

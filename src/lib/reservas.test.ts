@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resumoMesRacha, saldoRacha } from "./racha";
-import { serieReservas, totalGuardado } from "./reservas";
+import { resumoGuardado, serieReservas, totalGuardado } from "./reservas";
 import type { RachaMovimento, Reserva, ReservaSaldo } from "./tipos";
 
 describe("reservas", () => {
@@ -33,5 +33,30 @@ describe("racha", () => {
     const movs = [m("entrada", 2500, "2026-10-01"), m("entrada", 4000, "2026-10-08"), m("saida", 10000, "2026-10-08"), m("entrada", 500, "2026-09-30")];
     expect(saldoRacha(movs)).toBe(-3000);
     expect(resumoMesRacha(movs, "2026-10")).toEqual({ entrou: 6500, saiu: 10000 });
+  });
+});
+
+describe("total guardado com contas", () => {
+  it("separa em conta e reservas, respeitando a visão", () => {
+    const reservas = [
+      { id: "r1", ativa: true, nome: "Caixinhas (A)", dono_membro_id: "a" },
+      { id: "r2", ativa: true, nome: "Ações (B)", dono_membro_id: "b" },
+      { id: "r3", ativa: false, nome: "Antiga", dono_membro_id: "a" },
+    ] as (Reserva & { dono_membro_id: string | null })[];
+    const saldos = [
+      { reserva_id: "r1", data: "2026-10-30", valor: 300000 },
+      { reserva_id: "r2", data: "2026-10-30", valor: 50000 },
+      { reserva_id: "r3", data: "2026-10-30", valor: 999 },
+    ] as ReservaSaldo[];
+    const contas = [
+      { id: "c1", nome: "Conta A", tipo: "BANK", ativa: true, saldo: 600000, dono_membro_id: "a" },
+      { id: "c2", nome: "Conta B", tipo: "BANK", ativa: true, saldo: 10000, dono_membro_id: "b" },
+      { id: "c3", nome: "Cartão", tipo: "CREDIT", ativa: true, saldo: 800000, dono_membro_id: "a" },
+      { id: "c4", nome: "Zerada", tipo: "BANK", ativa: true, saldo: 0, dono_membro_id: "a" },
+    ];
+    const casal = resumoGuardado(reservas, saldos, contas, "casal");
+    expect(casal).toMatchObject({ totalConta: 610000, totalReservas: 350000, total: 960000 });
+    expect(casal.emConta.map((c) => c.nome)).toEqual(["Conta A", "Conta B"]);
+    expect(resumoGuardado(reservas, saldos, contas, "a")).toMatchObject({ totalConta: 600000, totalReservas: 300000, total: 900000 });
   });
 });

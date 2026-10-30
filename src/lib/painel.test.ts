@@ -101,6 +101,23 @@ describe("vencimentos e categorias", () => {
   });
 });
 
+describe("pago com dinheiro guardado", () => {
+  it("fica fora da sobra e da projeção, mas continua nos gastos por categoria", () => {
+    const lista = [
+      oc({ tipo: "entrada", valor_previsto: 500000, valor_real: 500000, status: "pago" }),
+      oc({ categoria_id: "casamento", valor_previsto: 300000, valor_real: 300000, status: "pago", paga_com_reserva: true }),
+      oc({ categoria_id: "casamento", valor_previsto: 200000, vencimento: "2026-10-25", paga_com_reserva: true }), // a pagar com a caixinha
+      oc({ categoria_id: "mercado", valor_previsto: 50000, valor_real: 50000, status: "pago" }),
+    ];
+    expect(sobraDoMes(lista, "2026-10").previsto).toEqual({ entradas: 500000, saidas: 50000, saldo: 450000 });
+    expect(projecao(lista, HOJE, null, 1)[0].sobra).toBe(450000);
+    expect(gastosPorCategoria(lista, "2026-10")).toEqual([
+      { categoria_id: "casamento", total: 500000 },
+      { categoria_id: "mercado", total: 50000 },
+    ]);
+  });
+});
+
 describe("saldo em conta", () => {
   const conta = (dono: string | null, saldo: number, p: Partial<{ tipo: string; ativa: boolean }> = {}) => ({
     tipo: "BANK",

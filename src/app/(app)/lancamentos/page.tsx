@@ -10,6 +10,7 @@ import { Abas, Botao, Cartao, Carregando, Dinheiro, Erro, Selecao, Selo, Titulo,
 import { formatarData, hojeISO, primeiroDia, ultimoDia } from "@/lib/datas";
 import { buscarTodos } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
+import { contaNaSobra } from "@/lib/painel";
 import type { Ocorrencia, Recorrencia } from "@/lib/tipos";
 
 export default function Lancamentos() {
@@ -62,7 +63,8 @@ function DoMes() {
     return l;
   }, [dados, visao, tipo, status, categoria, dono, hoje]);
 
-  const ativos = lista.filter((o) => o.status !== "cancelado");
+  // Mesma regra da sobra: canceladas e pagas com dinheiro guardado ficam fora dos totais.
+  const ativos = lista.filter(contaNaSobra);
   const soma = (t: string, soPagos = false) =>
     ativos.filter((o) => o.tipo === t && (!soPagos || o.status === "pago")).reduce((s, o) => s + valorEfetivo(o), 0);
   const entradas = soma("entrada");

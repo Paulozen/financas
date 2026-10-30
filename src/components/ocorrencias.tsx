@@ -9,6 +9,7 @@ import {
   cancelarOcorrencia,
   desfazerPagamento,
   excluirOcorrencia,
+  marcarComReserva,
   pagar,
 } from "@/lib/acoes";
 import { formatarData, hojeISO } from "@/lib/datas";
@@ -48,6 +49,7 @@ export function LinhaOcorrencia({ o, aoAbrir, aoPagar }: { o: Ocorrencia; aoAbri
         <span className={clsx("truncate font-medium", o.status === "cancelado" && "line-through opacity-60")}>{o.descricao}</span>
         <span className="flex flex-wrap items-center gap-1 text-xs text-slate-500">
           {formatarData(o.vencimento)} · {nomeCategoria(o.categoria_id)} · {nomeDono(o.dono_membro_id)} <SeloStatus o={o} />
+          {o.paga_com_reserva && <Selo cor="azul">dinheiro guardado</Selo>}
         </span>
       </button>
       <div className="flex flex-col items-end">
@@ -82,6 +84,7 @@ function FormPagar({ o, aoFechar }: { o: Ocorrencia; aoFechar: () => void }) {
   const [data, setData] = useState(hojeISO());
   const [obs, setObs] = useState(o.observacao ?? "");
   const [estimativa, setEstimativa] = useState(false);
+  const [comReserva, setComReserva] = useState(!!o.paga_com_reserva);
   const [modo, setModo] = useState<"fixa" | "variavel" | undefined>(undefined);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -100,7 +103,7 @@ function FormPagar({ o, aoFechar }: { o: Ocorrencia; aoFechar: () => void }) {
     setErro(null);
     setSalvando(true);
     try {
-      await pagar(o, { valor, data, observacao: obs, usarComoEstimativa: estimativa });
+      await pagar(o, { valor, data, observacao: obs, usarComoEstimativa: estimativa, comReserva: o.tipo === "saida" && comReserva });
       await sincronizar();
       aoFechar();
     } catch (e) {
@@ -119,6 +122,12 @@ function FormPagar({ o, aoFechar }: { o: Ocorrencia; aoFechar: () => void }) {
         <CampoValor rotulo="Valor pago" valor={valor} aoMudar={setValor} autoFocus dica={`Previsto: ${formatarReais(o.valor_previsto)}`} />
         <Campo rotulo="Data do pagamento" type="date" value={data} onChange={(e) => setData(e.target.value)} />
         <AreaTexto rotulo="Observação" value={obs} onChange={(e) => setObs(e.target.value)} />
+        {o.tipo === "saida" && (
+          <div>
+            <Interruptor rotulo="Pago com dinheiro guardado (caixinha/reserva)" marcado={comReserva} aoMudar={setComReserva} />
+            <p className="text-xs text-slate-500">Continua na categoria e no projeto, mas não pesa na sobra do mês nem na projeção.</p>
+          </div>
+        )}
         {aceitaEstimativa(o, modo) && (
           <Interruptor rotulo="Usar este valor como estimativa das próximas" marcado={estimativa} aoMudar={setEstimativa} />
         )}
@@ -240,11 +249,7 @@ function DetalheOcorrencia({ o, aoFechar, aoPagar }: { o: Ocorrencia; aoFechar: 
                 <SeletorDono valor={dono} aoMudar={setDono} membros={membros} />
               </>
             )}
-            <CampoValor
-              rotulo={editavelLivre ? "Valor previsto" : "Valor previsto só deste mês"}
-              valor={previsto}
-              aoMudar={setPrevisto}
-            />
+            <CampoValor rotulo={editavelLivre ? "Valor previsto" : "Valor previsto só deste mês"} valor={previsto} aoMudar={setPrevisto} />
             <Botao variante="secundario" carregando={ocupado} onClick={() => acao(salvarEdicao)}>
               Salvar alterações
             </Botao>
@@ -268,12 +273,13 @@ function DetalheOcorrencia({ o, aoFechar, aoPagar }: { o: Ocorrencia; aoFechar: 
               Desfazer pagamento
             </Botao>
           )}
+          {o.tipo === "saida" && o.status !== "cancelado" && (
+            <Botao variante="secundario" carregando={ocupado} onClick={() => acao(() => marcarComReserva(o, !o.paga_com_reserva))}>
+              {o.paga_com_reserva ? "Desmarcar “dinheiro guardado”" : "Marcar como paga com dinheiro guardado"}
+            </Botao>
+          )}
           {o.status !== "pago" && o.origem_tipo !== "pontual" && (
-            <Botao
-              variante="secundario"
-              carregando={ocupado}
-              onClick={() => acao(() => cancelarOcorrencia(o, o.status !== "cancelado"))}
-            >
+            <Botao variante="secundario" carregando={ocupado} onClick={() => acao(() => cancelarOcorrencia(o, o.status !== "cancelado"))}>
               {o.status === "cancelado" ? "Reativar" : "Cancelar este mês"}
             </Botao>
           )}

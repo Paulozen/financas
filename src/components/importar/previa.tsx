@@ -25,6 +25,8 @@ export interface LinhaPrevia {
   vinculo_id: string;
   motivo: string;
   padrao: string;
+  /** saída paga com dinheiro guardado (fora da sobra e da projeção) */
+  com_reserva?: boolean;
 }
 
 const ROTULO_ACAO: Record<Acao, string> = { novo: "Novo lançamento", vincular: "Vincular", racha: "Racha", ignorar: "Ignorar" };
@@ -244,6 +246,13 @@ export function Previa({
             >
               Aplicar categoria
             </Botao>
+            <Botao
+              variante="secundario"
+              className="!min-h-9 !px-3"
+              onClick={() => aplicarLote((l) => (l.t.valor < 0 ? { com_reserva: !l.com_reserva } : {}))}
+            >
+              Alternar “dinheiro guardado”
+            </Botao>
           </div>
         )}
       </div>
@@ -368,6 +377,17 @@ export function Previa({
                           ) : (
                             <span className="self-center text-xs text-red-600">Nenhum previsto com valor e data próximos.</span>
                           ))}
+                        {(l.acao === "novo" || l.acao === "vincular") && l.t.valor < 0 && (
+                          <label className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+                            <input
+                              type="checkbox"
+                              className="size-4 accent-emerald-600"
+                              checked={!!l.com_reserva}
+                              onChange={(e) => alterar(l.hash, { com_reserva: e.target.checked })}
+                            />
+                            dinheiro guardado
+                          </label>
+                        )}
                         {l.acao === "racha" && (
                           <select
                             aria-label="Tipo no racha"

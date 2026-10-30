@@ -127,24 +127,37 @@ export function FormRecorrencia({
             atual={modo}
             aoMudar={setModo}
           />
-          <Campo rotulo="Descrição" placeholder={tipo === "entrada" ? "Ex.: Salário" : "Ex.: Aluguel"} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
+          <Campo
+            rotulo="Descrição"
+            placeholder={tipo === "entrada" ? "Ex.: Salário" : "Ex.: Aluguel"}
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+          />
           <CampoValor
             rotulo={modo === "variavel" ? "Valor estimado" : "Valor"}
             valor={valor}
             aoMudar={setValor}
             dica={modo === "variavel" && media ? "Usado até haver pagamentos; depois vale a média dos últimos 3." : undefined}
           />
-          {modo === "variavel" && (
-            <Interruptor rotulo="Prever pela média dos últimos 3 pagamentos" marcado={media} aoMudar={setMedia} />
-          )}
-          <Campo rotulo="Dia do mês" type="number" inputMode="numeric" min={1} max={31} value={dia} onChange={(e) => setDia(e.target.value)} />
+          {modo === "variavel" && <Interruptor rotulo="Prever pela média dos últimos 3 pagamentos" marcado={media} aoMudar={setMedia} />}
+          <Campo
+            rotulo="Dia do mês"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={31}
+            value={dia}
+            onChange={(e) => setDia(e.target.value)}
+          />
           <div className="grid grid-cols-2 gap-3">
             <Campo rotulo="Início" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} />
             <Campo rotulo="Fim (opcional)" type="date" value={fim} onChange={(e) => setFim(e.target.value)} />
           </div>
           <SeletorDono valor={dono} aoMudar={setDono} membros={membros} />
           <SeletorCategoria tipo={tipo} valor={categoria} aoMudar={setCategoria} categorias={categorias} />
-          {regra && <p className="text-xs text-slate-500">Alterações valem para as ocorrências futuras pendentes; as já pagas não mudam.</p>}
+          {regra && (
+            <p className="text-xs text-slate-500">Alterações valem para as ocorrências futuras pendentes; as já pagas não mudam.</p>
+          )}
           <Erro mensagem={erro} />
           <Botao type="submit" carregando={salvando}>
             Salvar
@@ -173,6 +186,7 @@ export function FormPontual({ aoFechar }: { aoFechar: () => void }) {
   const [dono, setDono] = useState(donoPadrao);
   const [categoria, setCategoria] = useState("");
   const [fonte, setFonte] = useState("");
+  const [comReserva, setComReserva] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -200,6 +214,7 @@ export function FormPontual({ aoFechar }: { aoFechar: () => void }) {
             pago_em: pago ? data : null,
             status: pago ? "pago" : "pendente",
             fonte: tipo === "entrada" && fonte.trim() ? fonte.trim() : null,
+            paga_com_reserva: tipo === "saida" && comReserva,
           }),
       );
       await sincronizar();
@@ -232,6 +247,9 @@ export function FormPontual({ aoFechar }: { aoFechar: () => void }) {
         )}
         <Campo rotulo="Data" type="date" value={data} onChange={(e) => setData(e.target.value)} />
         <Interruptor rotulo={tipo === "entrada" ? "Já recebido" : "Já pago"} marcado={pago} aoMudar={setPago} />
+        {tipo === "saida" && (
+          <Interruptor rotulo="Pago com dinheiro guardado (caixinha/reserva)" marcado={comReserva} aoMudar={setComReserva} />
+        )}
         <SeletorDono valor={dono} aoMudar={setDono} membros={membros} />
         <SeletorCategoria tipo={tipo} valor={categoria} aoMudar={setCategoria} categorias={categorias} />
         <Erro mensagem={erro} />

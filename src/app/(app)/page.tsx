@@ -19,7 +19,7 @@ import { gastosDaFatura, type CompraCartao } from "@/lib/pluggy/cartao";
 import { avisosConexao, COMO_RENOVAR, type EstadoItem } from "@/lib/pluggy/conexoes";
 import { resumoProjeto } from "@/lib/projetos";
 import { saldoRacha } from "@/lib/racha";
-import { totalGuardado } from "@/lib/reservas";
+import { resumoGuardado } from "@/lib/reservas";
 import type { Contrato, Divida, Ocorrencia, Projeto, ProjetoItem, RachaMovimento, Reserva, ReservaSaldo } from "@/lib/tipos";
 
 export default function Painel() {
@@ -139,12 +139,16 @@ export default function Painel() {
     }),
   ].filter((p) => p.ativo);
 
+  const guardado = resumoGuardado(dados.reservas, dados.saldos, dados.contasExternas, visao);
   // Total guardado e caixa do racha: no celular ficam no fim; no computador, embaixo da sobra.
   const rodape = (
     <>
       <Link href="/reservas" className="rounded-2xl border border-slate-200 p-3 dark:border-slate-800">
         <p className="text-xs text-slate-500">Total guardado</p>
-        <Dinheiro valor={totalGuardado(daVisao(dados.reservas, visao), dados.saldos)} className="font-semibold" />
+        <Dinheiro valor={guardado.total} className="font-semibold" />
+        <p className="text-[11px] text-slate-500">
+          em conta {formatarReais(guardado.totalConta)} · reservas {formatarReais(guardado.totalReservas)}
+        </p>
       </Link>
       {casa.racha_ativo ? (
         <Link href="/racha" className="rounded-2xl border border-slate-200 p-3 dark:border-slate-800">

@@ -173,3 +173,9 @@ Só estrutura; nenhum nome, descrição, valor ou número de conta real.
 - **Recorrentes conferidas com os extratos dos bancos novos:** o salário do Paulo cai no fim do mês (dia 30) e o valor dos dois últimos meses foi usado; a entrada do apartamento passou a ser paga por outra conta no dia 30 com o último valor; o financiamento da Caixa (prestação habitacional, dia 25) foi cadastrado como recorrente de Moradia/Casal. Os três começam em outubro para que os pagamentos de outubro sejam vinculados pela caixa de entrada. Recorrentes alteradas pelo casal no app (pensão, salário da Laura) não foram mexidas.
 - **Cartões:** os dois cartões do Paulo que têm dados no banco foram criados no app (nome do banco + final do cartão, dia de vencimento tirado das faturas), com faturas desde outubro, e vinculados às contas; o cartão da Laura no banco foi vinculado ao cartão dela que já existia no app (o banco não envia faturas nem compras dele).
 - **Sugestão de pagamento de fatura** passou a reconhecer também "Pagamento Fatura" (sem "de").
+
+## Dinheiro guardado (migração 005)
+
+- **"Pago com dinheiro guardado"** (`ocorrencias.paga_com_reserva`): marcável ao pagar, no lançamento rápido, no detalhe da ocorrência e por linha/em lote na caixa de entrada e na importação. A despesa continua na categoria e nos totais do projeto, mas fica fora da sobra do mês, dos totais de Lançamentos e da projeção (o resgate da caixinha já é ignorado; assim o mês não parece no vermelho).
+- **Total guardado** = saldo das contas correntes conectadas ("em conta") + reservas, mostrado separado por conta e por reserva (Reservas) e com os dois subtotais no Painel. Continua fora da sobra e da projeção.
+- O Open Finance não informa o nome de cada caixinha do PicPay (todas vêm como CDB do emissor), então o total das caixinhas é por pessoa, não por caixinha.

@@ -118,6 +118,8 @@ export interface Ocorrencia {
   fonte: string | null;
   parcela_num: number | null;
   transacao_importada_id: string | null;
+  /** paga com dinheiro guardado: fica na categoria/projeto, fora da sobra e da projeção */
+  paga_com_reserva?: boolean;
 }
 
 export interface Projeto {

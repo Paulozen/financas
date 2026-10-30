@@ -27,8 +27,11 @@ function totais(lista: Ocorrencia[]): Totais {
  * Sobra do mês. Previsto: todas as não canceladas do mês (real se pago, senão
  * previsto). Realizado: só as pagas.
  */
+/** Conta na sobra e na projeção? Canceladas e pagas com dinheiro guardado ficam de fora. */
+export const contaNaSobra = (o: Ocorrencia) => o.status !== "cancelado" && !o.paga_com_reserva;
+
 export function sobraDoMes(ocorrencias: Ocorrencia[], mes: string): { previsto: Totais; realizado: Totais } {
-  const doMes = ocorrencias.filter((o) => o.status !== "cancelado" && mesDe(o.vencimento) === mes);
+  const doMes = ocorrencias.filter((o) => contaNaSobra(o) && mesDe(o.vencimento) === mes);
   return { previsto: totais(doMes), realizado: totais(doMes.filter((o) => o.status === "pago")) };
 }
 
@@ -52,7 +55,7 @@ export function projecao(
   meses = 12,
 ): MesProjecao[] {
   const mesAtual = mesDe(hoje);
-  const ativas = ocorrencias.filter((o) => o.status !== "cancelado");
+  const ativas = ocorrencias.filter(contaNaSobra);
   const atrasadasAntes = ativas.filter((o) => o.status === "pendente" && o.vencimento < primeiroDia(mesAtual));
   let acumulado = saldoConta?.valor ?? 0;
   const lista: MesProjecao[] = [];
