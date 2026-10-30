@@ -19,3 +19,11 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **Planilhas:** `exceljs` (não usei o pacote `xlsx` do npm).
 - **Testes:** Vitest, só para a lógica pura (motor de ocorrências, cálculos, parsers).
 - **PROMPT_CLAUDE_CODE.md** fica fora do Git (arquivo local de instruções).
+
+## Fase 1
+
+- **RLS verificado** com `scripts/verificar-rls.mjs`: simula os dois usuários numa transação desfeita no fim (não grava nada). Um usuário fora da casa não lê nem escreve; `anon` não acessa nada.
+- **Casa com no máximo dois membros**; código de convite de 6 caracteres sem letras/números ambíguos.
+- **Onboarding** por funções `criar_casa` / `entrar_casa` (security definer), que também criam as categorias padrão.
+- **Ícones do PWA** gerados por `scripts/gerar-icones.mjs` (PNG puro, sem dependências). Service worker simples: rede primeiro para páginas, cache para estáticos; dados sempre online.
+- **Visão** (membro/Casal) e **mês** selecionados ficam no contexto do app; a visão é lembrada no `localStorage`.
