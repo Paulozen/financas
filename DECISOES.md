@@ -56,3 +56,10 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **Gráficos:** paleta categórica fixa e validada para daltonismo, com passos próprios no modo escuro (`src/lib/graficos.ts`); positivo azul / negativo vermelho na projeção.
 - **Racha:** movimentos em tabela própria, totalmente fora de `ocorrencias` (não entra em sobra, projeção nem gráficos). Quantidade × valor padrão vira um único movimento com a descrição "8 × R$ 5,00". Configuração (ativar, organizador, valores padrão) em Configurações.
 - **Configurações** também guarda o "Saldo em conta hoje" (valor + data) e mostra o código de convite.
+
+## Fase 6
+
+- **Painel** lê só `ocorrencias` (cálculos em `src/lib/painel.ts`, com testes). A visão (membro/Casal) filtra tudo, inclusive o total guardado; o caixa do racha aparece sempre à parte.
+- **Realizado** = ocorrências pagas com vencimento no mês (mesma base do previsto, para as duas linhas serem comparáveis).
+- **Projeção:** mês atual + 11. Pendentes atrasadas de meses anteriores entram no mês atual. Saldo acumulado = saldo informado + o que ainda não está refletido nele (pendentes e pagamentos com data posterior à do saldo).
+- **Gastos por categoria** em barras horizontais simples (HTML), com a cor da categoria e percentual; a projeção tem também uma visão em tabela.

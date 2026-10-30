@@ -29,10 +29,9 @@ export const ROTULO_ORIGEM: Record<Ocorrencia["origem_tipo"], string> = {
   fatura: "Fatura",
 };
 
-/** Valor que conta: real se pago, senão o previsto. */
-export function valorEfetivo(o: Ocorrencia): number {
-  return o.status === "pago" ? (o.valor_real ?? 0) : o.valor_previsto;
-}
+import { valorConta as valorEfetivo } from "@/lib/painel";
+
+export { valorEfetivo };
 
 export function SeloStatus({ o }: { o: Ocorrencia }) {
   if (o.status === "pago") return <Selo cor="verde">Pago</Selo>;
