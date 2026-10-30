@@ -142,3 +142,13 @@ Só estrutura; nenhum nome, descrição, valor ou número de conta real.
 - **"Aplicar regras aprendidas automaticamente"** (Configurações → Bancos conectados, desligado por padrão): depois de cada sincronização, as linhas cuja sugestão veio de regra aprendida são confirmadas sozinhas e aparecem no Histórico da caixa como "automática", com Desfazer.
 - **Saldo em conta:** com contas correntes conectadas, a projeção usa a soma dos saldos delas (por dono, conforme a visão; Casal = todas); sem conta conectada, continua valendo o saldo informado à mão.
 - Verificado em `scripts/verificar-rls.mjs` (transação desfeita, usuários fictícios criados dentro dela): confirmar uma linha "novo" e uma "vincular", e desfazer as duas.
+
+## Open Finance — Etapa 4: cartões de crédito
+
+- **Vínculo:** em Configurações → Bancos conectados, cada conta `CREDIT` pode ser ligada a um cartão do app (`contas_externas.cartao_id`) ou criar um cartão novo com o nome e o dia de vencimento vindos do banco (dia 10 se o banco não informar).
+- **Faturas fechadas** (`/bills`): o valor e o vencimento atualizam a ocorrência de fatura pendente do mesmo mês, que continua pendente até o pagamento ser vinculado. A ocorrência fica `previsto_manual`, e o motor passou a preservar também o vencimento de ocorrências assim (antes só o valor).
+- **Faturas futuras** (meses depois da última fatura fechada): previsto = parcelas conhecidas daquele mês + média das compras à vista das 3 últimas faturas fechadas (pagamentos e estornos fora). Recalculado a cada sincronização; por isso, nos cartões vinculados, o previsto das faturas é gerido pela sincronização (um ajuste à mão vale até a próxima).
+- **Parcelas:** agrupadas por descrição sem o "x/y", data da compra, total de parcelas e valor. Um banco já manda as parcelas futuras como transações (são aproveitadas), o outro só a corrente (as seguintes são calculadas mês a mês a partir da maior parcela conhecida). Sem contar em dobro.
+- **Compras não viram ocorrências** (a fatura é a ocorrência). Ficam como detalhe do cartão (`/compromissos/cartao/[id]`: parcelas em aberto, comprometido por mês, faturas do banco e compras de cada fatura com categoria editável). A categoria vem de regra aprendida ou da categoria da Pluggy; mudar a categoria de uma compra cria/atualiza a regra para as próximas.
+- **Painel:** a categoria "Cartão" em "Gastos por categoria" abre a distribuição das compras da fatura do mês (cartões vinculados, conforme a visão).
+- **Validado com os dados reais** numa transação desfeita: faturas fechadas com valor e vencimento do banco, meses seguintes com previsão, 153 de 160 compras com categoria sugerida. Dois dos quatro cartões não têm faturas nem transações na API: para eles o previsto continua manual.

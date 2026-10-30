@@ -15,6 +15,7 @@ import { formatarReais } from "@/lib/dinheiro";
 import { reaisCurto, useCoresGrafico } from "@/lib/graficos";
 import { gastosPorCategoria, projecao, saldoEmConta, sobraDoMes, vencimentos, type MesProjecao } from "@/lib/painel";
 import type { ContaExterna } from "@/lib/caixa-entrada";
+import { gastosDaFatura, type CompraCartao } from "@/lib/pluggy/cartao";
 import { resumoProjeto } from "@/lib/projetos";
 import { saldoRacha } from "@/lib/racha";
 import { totalGuardado } from "@/lib/reservas";
@@ -27,22 +28,24 @@ export default function Painel() {
   const hoje = hojeISO();
 
   const { dados, erro, carregando } = useCarregar("painel", async () => {
-    const [ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha, contasExternas, aRevisar] = await Promise.all([
-      buscarTodos<Ocorrencia>("ocorrencias", casa.id, undefined, "vencimento"),
-      buscarTodos<Contrato>("contratos", casa.id),
-      buscarTodos<Divida>("dividas", casa.id),
-      buscarTodos<Projeto>("projetos", casa.id, (q) => q.eq("status", "ativo")),
-      buscarTodos<ProjetoItem>("projeto_itens", casa.id),
-      buscarTodos<Reserva>("reservas", casa.id),
-      buscarTodos<ReservaSaldo>("reserva_saldos", casa.id),
-      casa.racha_ativo ? buscarTodos<RachaMovimento>("racha_movimentos", casa.id) : Promise.resolve([]),
-      buscarTodos<ContaExterna>("contas_externas", casa.id),
-      buscarTodos<{ conta_externa_id: string }>("transacoes_externas", casa.id, (q) => q.eq("situacao", "pendente"), "data"),
-    ]);
+    const [ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha, contasExternas, aRevisar, comprasCartao] =
+      await Promise.all([
+        buscarTodos<Ocorrencia>("ocorrencias", casa.id, undefined, "vencimento"),
+        buscarTodos<Contrato>("contratos", casa.id),
+        buscarTodos<Divida>("dividas", casa.id),
+        buscarTodos<Projeto>("projetos", casa.id, (q) => q.eq("status", "ativo")),
+        buscarTodos<ProjetoItem>("projeto_itens", casa.id),
+        buscarTodos<Reserva>("reservas", casa.id),
+        buscarTodos<ReservaSaldo>("reserva_saldos", casa.id),
+        casa.racha_ativo ? buscarTodos<RachaMovimento>("racha_movimentos", casa.id) : Promise.resolve([]),
+        buscarTodos<ContaExterna>("contas_externas", casa.id),
+        buscarTodos<{ conta_externa_id: string }>("transacoes_externas", casa.id, (q) => q.eq("situacao", "pendente"), "data"),
+        buscarTodos<CompraCartao & { conta_externa_id: string }>("transacoes_externas", casa.id, (q) => q.eq("situacao", "cartao"), "data"),
+      ]);
     // Caixa de entrada: só contas correntes ativas.
     const bancosAtivos = new Set(contasExternas.filter((c) => c.ativa && c.tipo === "BANK").map((c) => c.id));
     const pendentesCaixa = aRevisar.filter((t) => bancosAtivos.has(t.conta_externa_id)).length;
-    return { ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha, contasExternas, pendentesCaixa };
+    return { ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha, contasExternas, pendentesCaixa, comprasCartao };
   });
 
   if (carregando && !dados)
@@ -70,6 +73,16 @@ export default function Painel() {
   );
   const proj = projecao(ocorrencias, hoje, saldoHoje);
   const venc = vencimentos(ocorrencias, hoje);
+  // Compras dos cartões vinculados na fatura do mês (dono do cartão conforme a visão).
+  const contasCartao = new Map(
+    dados.contasExternas.filter((c) => c.tipo === "CREDIT" && c.ativa && c.cartao_id).map((c) => [c.id, c.dono_membro_id]),
+  );
+  const gastosCartao = gastosDaFatura(
+    dados.comprasCartao.filter(
+      (x) => contasCartao.has(x.conta_externa_id) && (visao === "casal" || contasCartao.get(x.conta_externa_id) === visao),
+    ),
+    mes,
+  );
   const gastos = gastosPorCategoria(ocorrencias, mes);
   const maiorGasto = gastos[0]?.total ?? 0;
 
@@ -315,6 +328,33 @@ export default function Painel() {
                         style={{ width: `${(g.total / maiorGasto) * 100}%`, background: cat?.cor ?? "#94a3b8" }}
                       />
                     </div>
+                    {cat?.nome === "Cartão" && gastosCartao.length > 0 && (
+                      <details className="mt-1 ml-4 text-xs">
+                        <summary className="cursor-pointer text-slate-500">Ver compras da fatura por categoria</summary>
+                        <ul className="mt-1 flex flex-col gap-1">
+                          {gastosCartao.map((s) => {
+                            const sub = categorias.find((c) => c.id === s.categoria_id);
+                            return (
+                              <li key={s.categoria_id ?? "sem"}>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="size-2 rounded-full" style={{ background: sub?.cor ?? "#94a3b8" }} aria-hidden />
+                                    {sub?.nome ?? "Sem categoria"}
+                                  </span>
+                                  <span className="tabular-nums">{formatarReais(s.total)}</span>
+                                </div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                  <div
+                                    className="h-full rounded-full"
+                                    style={{ width: `${(s.total / gastosCartao[0].total) * 100}%`, background: sub?.cor ?? "#94a3b8" }}
+                                  />
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </details>
+                    )}
                   </li>
                 );
               })}

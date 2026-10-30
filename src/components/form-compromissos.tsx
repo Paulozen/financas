@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { criarCartao } from "@/lib/cartoes";
 import { hojeISO } from "@/lib/datas";
 import { checar } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
@@ -244,21 +245,7 @@ export function FormCartao({ cartao, aoFechar }: { cartao?: TCartao; aoFechar: (
         checar(await sb.from("cartoes").update(dados).eq("id", cartao.id));
         checar(await sb.from("recorrencias").update(regra).eq("cartao_id", cartao.id));
       } else {
-        const novo = checar(await sb.from("cartoes").insert(dados).select("id").single()) as { id: string };
-        // Cada cartão tem uma despesa variável "Fatura <nome>".
-        checar(
-          await sb.from("recorrencias").insert({
-            ...regra,
-            casa_id: casa.id,
-            tipo: "saida",
-            modo: "variavel",
-            valor: 0,
-            valor_manual: false,
-            inicio: `${hojeISO().slice(0, 7)}-01`,
-            categoria_id: categoriaPorNome(categorias, "Cartão") || null,
-            cartao_id: novo.id,
-          }),
-        );
+        await criarCartao(casa.id, categorias, { nome: nome.trim(), dono_membro_id: dono || null, dia_vencimento: dv, dia_fechamento: df });
       }
       await sincronizar();
       aoFechar();

@@ -199,6 +199,12 @@ function Cartoes() {
                     </p>
                   </div>
                   <div className="flex gap-1">
+                    <Link
+                      href={`/compromissos/cartao/${c.id}`}
+                      className="inline-flex min-h-9 items-center rounded-xl px-2 text-sm font-medium text-emerald-700 hover:bg-slate-200 dark:text-emerald-400 dark:hover:bg-slate-800"
+                    >
+                      Detalhes
+                    </Link>
                     <Botao variante="fantasma" className="!min-h-9 !px-2" onClick={() => setEditando(c)}>
                       Editar
                     </Botao>

@@ -268,6 +268,8 @@ export function planejar(e: EntradaMotor): PlanoMotor {
 
     const campos: Partial<Ocorrencia> = {};
     for (const k of CAMPOS_COMPARADOS) {
+      // Previsto ajustado (à mão ou pela fatura do banco): valor e vencimento ficam como estão.
+      if (k === "vencimento" && atual.previsto_manual) continue;
       if (atual[k] !== d[k]) (campos as Record<string, unknown>)[k] = d[k];
     }
     if (!atual.previsto_manual && atual.valor_previsto !== d.valor_previsto) campos.valor_previsto = d.valor_previsto;

@@ -90,6 +90,14 @@ describe("motor: recorrências", () => {
     expect(p2.atualizar[0].campos).toEqual({ descricao: "Aluguel novo", valor_previsto: 170000 });
   });
 
+  it("previsto ajustado (ex.: fatura do banco) mantém também o vencimento", () => {
+    const r = regra({ cartao_id: "c1", modo: "variavel" });
+    const p1 = planejar({ hoje: HOJE, recorrencias: [r], contratos: [], dividas: [], ocorrencias: [] });
+    const exist = p1.inserir.map((n) => existente(n, { previsto_manual: true, valor_previsto: 123456, vencimento: n.vencimento.slice(0, 8) + "07" }));
+    const p2 = planejar({ hoje: HOJE, recorrencias: [r], contratos: [], dividas: [], ocorrencias: exist });
+    expect(p2.atualizar).toHaveLength(0);
+  });
+
   it("não sobrescreve previsto ajustado manualmente", () => {
     const r = regra();
     const p1 = planejar({ hoje: HOJE, recorrencias: [r], contratos: [], dividas: [], ocorrencias: [] });

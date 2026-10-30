@@ -181,7 +181,11 @@ export async function sincronizarCasa(
     }
   }
 
-  await aposSincronizar(sb, casaId, hoje);
+  try {
+    await aposSincronizar(sb, casaId, hoje);
+  } catch (e) {
+    resumo.erros.push(`Faturas/reservas: ${e instanceof Error ? e.message : String(e)}`);
+  }
   return resumo;
 }
 
