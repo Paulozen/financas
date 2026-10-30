@@ -56,3 +56,4 @@ Checklist das fases (seção 8 do `PROMPT_CLAUDE_CODE.md`).
 ## Notas / problemas
 
 - Nenhum bloqueio durante a construção.
+- **Corrigido depois da entrega:** a página provisória da fase 0 (`src/app/page.tsx`) não tinha sido apagada e cobria o Painel em "/". Removida; "/" agora redireciona para o login e foi conferido num navegador headless (Chromium, tamanho de celular, claro e escuro).
