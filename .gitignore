@@ -19,3 +19,4 @@ npm-debug.log*
 
 # instruções locais
 PROMPT_CLAUDE_CODE.md
+scripts/_*
