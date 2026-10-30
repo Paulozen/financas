@@ -67,9 +67,9 @@ Integração feita em 6 etapas (detalhes em `DECISOES.md`): reconhecimento da AP
 1. **Vercel:** cadastrar `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET`, `PLUGGY_ITEMS_PAULO` e `PLUGGY_ITEMS_LAURA` em Settings → Environment Variables (Production) e fazer um novo deploy. Sem isso o site mostra "Nenhum banco configurado".
 2. **Configurações → Bancos conectados:** tocar em "Sincronizar agora". Conferir os bancos de cada um, com "Em dia", a data da última sincronização e a validade da autorização (~1 ano). Conferir os nomes das contas e os donos (dá para trocar).
 3. **Painel:** deve aparecer o atalho "N transações dos bancos para revisar". A projeção passa a usar o saldo das contas conectadas.
-4. **Caixa de entrada:** conferir as sugestões (salário/OPEA/financiamento de outubro como Vincular, pagamentos de fatura vinculados à fatura, rendimentos e transferências entre contas como Ignorar), selecionar algumas e "Confirmar sugestões selecionadas". Ver em Lançamentos que viraram pagos/novos. Na aba Histórico, desfazer uma.
+4. **Caixa de entrada:** conferir as sugestões (salário, entrada do apartamento e financiamento de outubro como Vincular, pagamentos de fatura vinculados à fatura, rendimentos e transferências entre contas como Ignorar), selecionar algumas e "Confirmar sugestões selecionadas". Ver em Lançamentos que viraram pagos/novos. Na aba Histórico, desfazer uma.
 5. **Regras automáticas:** ligar "Aplicar regras aprendidas automaticamente", sincronizar de novo e ver no Histórico as marcadas como "automática".
-6. **Cartões:** Compromissos → Cartões → "Detalhes" do Cartão Inter ou Nubank: parcelas em aberto, comprometido por mês, faturas do banco e compras por fatura. Mudar a categoria de uma compra. No Painel, abrir "Cartão" em Gastos por categoria.
+6. **Cartões:** Compromissos → Cartões → "Detalhes" de um cartão vinculado ao banco: parcelas em aberto, comprometido por mês, faturas do banco e compras por fatura. Mudar a categoria de uma compra. No Painel, abrir "Cartão" em Gastos por categoria.
 7. **Reservas:** editar uma reserva e vincular a um investimento do banco; o saldo passa a ser automático.
 8. **Importação por arquivo:** continua disponível como alternativa (por exemplo, para um banco sem conexão). Para períodos que já vieram pelo Open Finance, use a caixa de entrada (ver limitações).
 

@@ -65,7 +65,7 @@ export function converterTransacao(t: PluggyTransacao, tipoConta: PluggyConta["t
 
 /**
  * Nome do banco de um item. No Meu Pluggy o conector se chama sempre "MeuPluggy";
- * aí usamos o nome da primeira conta corrente (ex.: "BANCO INTER 06-6" -> "Banco Inter").
+ * aí usamos o nome da primeira conta corrente (ex.: "BANCO EXEMPLO 01-2" -> "Banco Exemplo").
  */
 export function nomeBanco(conector: string | null | undefined, contas: Pick<PluggyConta, "type" | "name" | "marketingName">[]): string | null {
   if (conector && !/meu ?pluggy/i.test(conector)) return conector;
