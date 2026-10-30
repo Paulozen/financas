@@ -152,3 +152,10 @@ Só estrutura; nenhum nome, descrição, valor ou número de conta real.
 - **Compras não viram ocorrências** (a fatura é a ocorrência). Ficam como detalhe do cartão (`/compromissos/cartao/[id]`: parcelas em aberto, comprometido por mês, faturas do banco e compras de cada fatura com categoria editável). A categoria vem de regra aprendida ou da categoria da Pluggy; mudar a categoria de uma compra cria/atualiza a regra para as próximas.
 - **Painel:** a categoria "Cartão" em "Gastos por categoria" abre a distribuição das compras da fatura do mês (cartões vinculados, conforme a visão).
 - **Validado com os dados reais** numa transação desfeita: faturas fechadas com valor e vencimento do banco, meses seguintes com previsão, 153 de 160 compras com categoria sugerida. Dois dos quatro cartões não têm faturas nem transações na API: para eles o previsto continua manual.
+
+## Open Finance — Etapa 5: investimentos
+
+- O produto `investments` respondeu em 3 dos 5 itens (CDBs e ações). Cada investimento fica em `investimentos_externos` e pode ser vinculado a uma reserva no formulário da reserva (só aparecem os ativos com saldo e ainda livres).
+- Reserva vinculada: a cada sincronização o saldo do investimento vai para o histórico (`reserva_saldos`), um registro por dia (se já houver o do dia, é atualizado; sincronizar duas vezes não duplica). Se mais de um investimento for ligado à mesma reserva, os saldos são somados. Ao vincular, o saldo do dia já é gravado na hora.
+- Reservas sem vínculo continuam manuais. A reserva vinculada mostra o selo "saldo automático (Open Finance)".
+- Validado com os dados reais numa transação desfeita.

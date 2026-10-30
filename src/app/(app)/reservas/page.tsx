@@ -18,6 +18,8 @@ import {
   formatarErro,
   Interruptor,
   Modal,
+  Selecao,
+  Selo,
   Titulo,
   Vazio,
 } from "@/components/ui";
@@ -35,11 +37,12 @@ export default function Reservas() {
   const [atualizando, setAtualizando] = useState<Reserva | null>(null);
   const [historico, setHistorico] = useState<Reserva | null>(null);
   const { dados, erro, carregando } = useCarregar("reservas", async () => {
-    const [reservas, saldos] = await Promise.all([
+    const [reservas, saldos, investimentos] = await Promise.all([
       buscarTodos<Reserva>("reservas", casa.id, undefined, "nome"),
       buscarTodos<ReservaSaldo>("reserva_saldos", casa.id, undefined, "data"),
+      buscarTodos<Investimento>("investimentos_externos", casa.id, undefined, "nome"),
     ]);
-    return { reservas, saldos };
+    return { reservas, saldos, investimentos };
   });
   const reservas = daVisao(dados?.reservas ?? [], visao);
   const saldos = dados?.saldos ?? [];
@@ -85,6 +88,11 @@ export default function Reservas() {
                           {!r.ativa && " · encerrada"}
                         </p>
                         {r.observacao && <p className="text-xs text-slate-500">{r.observacao}</p>}
+                        {dados?.investimentos.some((i) => i.reserva_id === r.id) && (
+                          <p className="mt-1">
+                            <Selo cor="azul">saldo automático (Open Finance)</Selo>
+                          </p>
+                        )}
                       </button>
                       <div className="text-right">
                         <Dinheiro valor={s?.valor ?? 0} className="font-semibold" />
@@ -106,7 +114,13 @@ export default function Reservas() {
           )}
         </>
       )}
-      {form && <FormReserva reserva={form === "nova" ? undefined : form} aoFechar={() => setForm(null)} />}
+      {form && (
+        <FormReserva
+          reserva={form === "nova" ? undefined : form}
+          investimentos={dados?.investimentos ?? []}
+          aoFechar={() => setForm(null)}
+        />
+      )}
       {atualizando && (
         <FormSaldo reserva={atualizando} atual={saldoAtual(atualizando.id, saldos)?.valor ?? 0} aoFechar={() => setAtualizando(null)} />
       )}
@@ -173,8 +187,24 @@ function GraficoReservas({ reservas, saldos }: { reservas: Reserva[]; saldos: Re
   );
 }
 
-function FormReserva({ reserva, aoFechar }: { reserva?: Reserva; aoFechar: () => void }) {
+export interface Investimento {
+  id: string;
+  nome: string;
+  tipo: string | null;
+  subtipo: string | null;
+  emissor: string | null;
+  vencimento: string | null;
+  saldo: number;
+  status: string | null;
+  reserva_id: string | null;
+}
+
+function FormReserva({ reserva, investimentos, aoFechar }: { reserva?: Reserva; investimentos: Investimento[]; aoFechar: () => void }) {
   const { casa, membros, atualizar } = useApp();
+  const vinculadoAntes = investimentos.find((i) => reserva && i.reserva_id === reserva.id)?.id ?? "";
+  const [investimento, setInvestimento] = useState(vinculadoAntes);
+  // Só investimentos ativos com saldo, que não estejam ligados a outra reserva.
+  const opcoes = investimentos.filter((i) => (i.status !== "TOTAL_WITHDRAWAL" && i.saldo > 0 && !i.reserva_id) || i.id === vinculadoAntes);
   const [nome, setNome] = useState(reserva?.nome ?? "");
   const [banco, setBanco] = useState(reserva?.banco ?? "");
   const [dono, setDono] = useState(reserva?.dono_membro_id ?? "");
@@ -198,11 +228,27 @@ function FormReserva({ reserva, aoFechar }: { reserva?: Reserva; aoFechar: () =>
         ativa,
       };
       const sb = supabase();
+      let reservaId = reserva?.id;
       if (reserva) checar(await sb.from("reservas").update(dados).eq("id", reserva.id));
       else {
         const nova = checar(await sb.from("reservas").insert(dados).select("id").single()) as { id: string };
-        if (saldoInicial > 0)
+        reservaId = nova.id;
+        if (saldoInicial > 0 && !investimento)
           checar(await sb.from("reserva_saldos").insert({ casa_id: casa.id, reserva_id: nova.id, data: hojeISO(), valor: saldoInicial }));
+      }
+      if (investimento !== vinculadoAntes) {
+        // Troca o vínculo: o saldo passa a vir do investimento a cada sincronização.
+        if (vinculadoAntes) checar(await sb.from("investimentos_externos").update({ reserva_id: null }).eq("id", vinculadoAntes));
+        if (investimento) {
+          checar(await sb.from("investimentos_externos").update({ reserva_id: reservaId }).eq("id", investimento));
+          const inv = investimentos.find((i) => i.id === investimento)!;
+          const hoje = hojeISO();
+          const [doDia] = checar(await sb.from("reserva_saldos").select("id").eq("reserva_id", reservaId!).eq("data", hoje)) as {
+            id: string;
+          }[];
+          if (doDia) checar(await sb.from("reserva_saldos").update({ valor: inv.saldo }).eq("id", doDia.id));
+          else checar(await sb.from("reserva_saldos").insert({ casa_id: casa.id, reserva_id: reservaId, data: hoje, valor: inv.saldo }));
+        }
       }
       await atualizar();
       aoFechar();
@@ -230,7 +276,22 @@ function FormReserva({ reserva, aoFechar }: { reserva?: Reserva; aoFechar: () =>
         <Campo rotulo="Banco" value={banco} onChange={(e) => setBanco(e.target.value)} />
         <SeletorDono valor={dono} aoMudar={setDono} membros={membros} />
         <AreaTexto rotulo="Observação" placeholder="Ex.: 110% do CDI, vence em 2028" value={obs} onChange={(e) => setObs(e.target.value)} />
-        {!reserva && <CampoValor rotulo="Saldo atual" valor={saldoInicial} aoMudar={setSaldoInicial} />}
+        {opcoes.length > 0 && (
+          <Selecao
+            rotulo="Investimento no banco (Open Finance)"
+            value={investimento}
+            onChange={(e) => setInvestimento(e.target.value)}
+            vazio="— sem vínculo (saldo manual) —"
+            opcoes={opcoes.map((i) => ({
+              valor: i.id,
+              rotulo: `${i.nome}${i.emissor ? ` · ${i.emissor}` : ""}${i.vencimento ? ` · vence ${formatarData(i.vencimento)}` : ""} · ${formatarReais(i.saldo)}`,
+            }))}
+          />
+        )}
+        {investimento && (
+          <p className="-mt-2 text-xs text-slate-500">O saldo desta reserva será atualizado automaticamente a cada sincronização.</p>
+        )}
+        {!reserva && !investimento && <CampoValor rotulo="Saldo atual" valor={saldoInicial} aoMudar={setSaldoInicial} />}
         {reserva && <Interruptor rotulo="Ativa (conta no total guardado)" marcado={ativa} aoMudar={setAtiva} />}
         <Erro mensagem={erro} />
         <Botao type="submit" carregando={salvando}>
