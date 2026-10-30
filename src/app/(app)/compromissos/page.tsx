@@ -58,7 +58,7 @@ function Parcelados() {
 
   return (
     <>
-      <Botao className="mb-4 w-full" onClick={() => setNovo(true)}>
+      <Botao className="mb-4 w-full lg:w-auto" onClick={() => setNovo(true)}>
         <Plus className="size-4" /> Novo parcelado
       </Botao>
       <Erro mensagem={erro} />
@@ -67,7 +67,7 @@ function Parcelados() {
       ) : contratos.length === 0 ? (
         <Vazio titulo="Nenhum parcelado" texto="Cadastre aqui a construtora, um financiamento ou qualquer compromisso com parcelas." />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {contratos.map((c) => {
             const r = resumoContrato(c, dados!.ocorrencias);
             return (
@@ -108,20 +108,25 @@ function Dividas() {
     return { dividas, ocorrencias };
   });
   const dividas = daVisao(dados?.dividas ?? [], visao);
-  const resumos = dividas.map((d) => ({ d, r: resumoDivida(d, dados!.ocorrencias) })).sort((a, b) => Number(a.r.quitada) - Number(b.r.quitada));
+  const resumos = dividas
+    .map((d) => ({ d, r: resumoDivida(d, dados!.ocorrencias) }))
+    .sort((a, b) => Number(a.r.quitada) - Number(b.r.quitada));
 
   return (
     <>
-      <Botao className="mb-4 w-full" onClick={() => setNova(true)}>
+      <Botao className="mb-4 w-full lg:w-auto" onClick={() => setNova(true)}>
         <Plus className="size-4" /> Nova dívida
       </Botao>
       <Erro mensagem={erro} />
       {carregando && !dados ? (
         <Carregando />
       ) : dividas.length === 0 ? (
-        <Vazio titulo="Nenhuma dívida" texto="Para dívidas sem parcelas fixas (ex.: o carro): você paga quando puder, com uma meta mensal opcional." />
+        <Vazio
+          titulo="Nenhuma dívida"
+          texto="Para dívidas sem parcelas fixas (ex.: o carro): você paga quando puder, com uma meta mensal opcional."
+        />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {resumos.map(({ d, r }) => (
             <Link key={d.id} href={`/compromissos/divida/${d.id}`}>
               <Cartao className={r.quitada ? "opacity-70" : "hover:border-emerald-400"}>
@@ -168,7 +173,7 @@ function Cartoes() {
 
   return (
     <>
-      <Botao className="mb-4 w-full" onClick={() => setEditando("novo")}>
+      <Botao className="mb-4 w-full lg:w-auto" onClick={() => setEditando("novo")}>
         <Plus className="size-4" /> Novo cartão
       </Botao>
       <Erro mensagem={erro} />
@@ -177,7 +182,7 @@ function Cartoes() {
       ) : cartoes.length === 0 ? (
         <Vazio titulo="Nenhum cartão" texto="Cada cartão vira uma despesa mensal “Fatura”. Você ajusta o valor quando a fatura fecha." />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {cartoes.map((c) => {
             const regra = dados!.regras.find((r) => r.cartao_id === c.id);
             const faturas = dados!.faturas.filter((f) => f.origem_id === regra?.id);
@@ -197,7 +202,11 @@ function Cartoes() {
                     <Botao variante="fantasma" className="!min-h-9 !px-2" onClick={() => setEditando(c)}>
                       Editar
                     </Botao>
-                    <Botao variante="fantasma" className="!min-h-9 !px-2 text-red-600" onClick={() => regra && setExcluindo({ cartao: c, regraId: regra.id })}>
+                    <Botao
+                      variante="fantasma"
+                      className="!min-h-9 !px-2 text-red-600"
+                      onClick={() => regra && setExcluindo({ cartao: c, regraId: regra.id })}
+                    >
                       Excluir
                     </Botao>
                   </div>

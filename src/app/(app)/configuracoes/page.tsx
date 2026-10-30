@@ -62,7 +62,7 @@ export default function Configuracoes() {
   return (
     <>
       <Cabecalho titulo="Configurações" semVisao />
-      <form onSubmit={salvar} className="flex flex-col gap-4">
+      <form onSubmit={salvar} className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <Cartao>
           <Titulo>Você e a casa</Titulo>
           <div className="flex flex-col gap-4">
@@ -83,7 +83,9 @@ export default function Configuracoes() {
                 </Botao>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                {membros.length < 2 ? "A outra pessoa usa este código no primeiro acesso." : `Membros: ${membros.map((m) => m.nome).join(" e ")}.`}
+                {membros.length < 2
+                  ? "A outra pessoa usa este código no primeiro acesso."
+                  : `Membros: ${membros.map((m) => m.nome).join(" e ")}.`}
               </p>
             </div>
           </div>
@@ -92,7 +94,11 @@ export default function Configuracoes() {
         <Cartao>
           <Titulo>Saldo em conta</Titulo>
           <div className="flex flex-col gap-4">
-            <Interruptor rotulo="Informar saldo em conta hoje (mostra o saldo acumulado na projeção)" marcado={temSaldo} aoMudar={setTemSaldo} />
+            <Interruptor
+              rotulo="Informar saldo em conta hoje (mostra o saldo acumulado na projeção)"
+              marcado={temSaldo}
+              aoMudar={setTemSaldo}
+            />
             {temSaldo && (
               <div className="grid grid-cols-2 gap-3">
                 <CampoValor rotulo="Saldo" valor={saldo} aoMudar={setSaldo} />
@@ -124,15 +130,17 @@ export default function Configuracoes() {
           </div>
         </Cartao>
 
-        <Erro mensagem={erro} />
-        {ok && (
-          <p role="status" className="text-sm text-emerald-600">
-            {ok}
-          </p>
-        )}
-        <Botao type="submit" carregando={salvando}>
-          Salvar
-        </Botao>
+        <div className="flex flex-col gap-3 lg:col-span-2 lg:max-w-sm">
+          <Erro mensagem={erro} />
+          {ok && (
+            <p role="status" className="text-sm text-emerald-600">
+              {ok}
+            </p>
+          )}
+          <Botao type="submit" carregando={salvando}>
+            Salvar
+          </Botao>
+        </div>
       </form>
     </>
   );

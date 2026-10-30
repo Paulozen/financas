@@ -55,53 +55,51 @@ export default function DetalheDivida() {
         {d.credor} · {nomeDono(d.dono_membro_id)} · desde {formatarData(d.inicio)}
       </p>
 
-      <Cartao className="mb-4">
-        <div className="mb-3 grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-slate-500">Falta pagar</p>
-            <Dinheiro valor={r.restante} className="text-lg font-semibold" />
-          </div>
-          <div>
-            <p className="text-slate-500">Quitado</p>
-            <p className="text-lg font-semibold">{r.percentual}%</p>
-          </div>
-        </div>
-        <Barra valor={r.pago} total={d.valor_total} />
-        <p className="mt-1 text-xs text-slate-500">
-          Pago {formatarReais(r.pago)} de {formatarReais(d.valor_total)}
-        </p>
-        {d.meta_mensal && metaMes && !r.quitada && (
-          <p className="mt-2 text-sm">
-            Meta do mês ({formatarReais(d.meta_mensal)}):{" "}
-            {metaMes.status === "pago" ? (
-              <Selo cor="verde">cumprida</Selo>
-            ) : (
-              <>falta {formatarReais(metaMes.valor_previsto)}</>
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
+        <div>
+          <Cartao className="mb-4">
+            <div className="mb-3 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-slate-500">Falta pagar</p>
+                <Dinheiro valor={r.restante} className="text-lg font-semibold" />
+              </div>
+              <div>
+                <p className="text-slate-500">Quitado</p>
+                <p className="text-lg font-semibold">{r.percentual}%</p>
+              </div>
+            </div>
+            <Barra valor={r.pago} total={d.valor_total} />
+            <p className="mt-1 text-xs text-slate-500">
+              Pago {formatarReais(r.pago)} de {formatarReais(d.valor_total)}
+            </p>
+            {d.meta_mensal && metaMes && !r.quitada && (
+              <p className="mt-2 text-sm">
+                Meta do mês ({formatarReais(d.meta_mensal)}):{" "}
+                {metaMes.status === "pago" ? <Selo cor="verde">cumprida</Selo> : <>falta {formatarReais(metaMes.valor_previsto)}</>}
+              </p>
             )}
-          </p>
-        )}
-      </Cartao>
+          </Cartao>
 
-      {!r.quitada && (
-        <Botao className="mb-4 w-full" onClick={() => setPagamento(true)}>
-          <Plus className="size-4" /> Registrar pagamento
-        </Botao>
-      )}
-
-      <Cartao className="mb-4">
-        <Titulo>Histórico de pagamentos</Titulo>
-        {r.pagamentos.length === 0 ? (
-          <Vazio titulo="Nenhum pagamento ainda" />
-        ) : (
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-            {r.pagamentos.map((o) => (
-              <LinhaOcorrencia key={o.id} o={o} aoAbrir={() => setAberta(o)} aoPagar={() => setPagando(o)} />
-            ))}
-          </ul>
-        )}
-      </Cartao>
-
-      <div className="flex gap-2">
+          {!r.quitada && (
+            <Botao className="mb-4 w-full" onClick={() => setPagamento(true)}>
+              <Plus className="size-4" /> Registrar pagamento
+            </Botao>
+          )}
+        </div>
+        <Cartao className="mb-4">
+          <Titulo>Histórico de pagamentos</Titulo>
+          {r.pagamentos.length === 0 ? (
+            <Vazio titulo="Nenhum pagamento ainda" />
+          ) : (
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              {r.pagamentos.map((o) => (
+                <LinhaOcorrencia key={o.id} o={o} aoAbrir={() => setAberta(o)} aoPagar={() => setPagando(o)} />
+              ))}
+            </ul>
+          )}
+        </Cartao>
+      </div>
+      <div className="flex gap-2 lg:max-w-md">
         <Botao variante="secundario" className="flex-1" onClick={() => setEditando(true)}>
           Editar
         </Botao>

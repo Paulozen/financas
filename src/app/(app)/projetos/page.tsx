@@ -29,7 +29,7 @@ export default function Projetos() {
   return (
     <>
       <Cabecalho titulo="Projetos" />
-      <Botao className="mb-4 w-full" onClick={() => setNovo(true)}>
+      <Botao className="mb-4 w-full lg:w-auto" onClick={() => setNovo(true)}>
         <Plus className="size-4" /> Novo projeto
       </Botao>
       <Erro mensagem={erro} />
@@ -38,7 +38,7 @@ export default function Projetos() {
       ) : projetos.length === 0 ? (
         <Vazio titulo="Nenhum projeto" texto="Crie o projeto do casamento para acompanhar fornecedores, contratos e parcelas." />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {projetos.map((p) => {
             const itens = dados!.itens.filter((i) => i.projeto_id === p.id);
             const r = resumoProjeto(itens, dados!.parcelas);
@@ -52,7 +52,11 @@ export default function Projetos() {
                         {p.data_evento ? formatarData(p.data_evento) : "sem data"} · {itens.length} itens
                       </p>
                     </div>
-                    {p.status !== "ativo" ? <Selo>{p.status === "concluido" ? "concluído" : "cancelado"}</Selo> : <ChevronRight className="size-4 text-slate-400" />}
+                    {p.status !== "ativo" ? (
+                      <Selo>{p.status === "concluido" ? "concluído" : "cancelado"}</Selo>
+                    ) : (
+                      <ChevronRight className="size-4 text-slate-400" />
+                    )}
                   </div>
                   <Barra valor={r.pago} total={r.contratado} />
                   <p className="mt-1 text-xs text-slate-500">

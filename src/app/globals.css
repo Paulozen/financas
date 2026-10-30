@@ -17,3 +17,10 @@ body {
 .fab {
   bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
+
+/* No computador não há barra inferior */
+@media (min-width: 1024px) {
+  .fab {
+    bottom: 2rem;
+  }
+}

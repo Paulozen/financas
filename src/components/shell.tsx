@@ -7,15 +7,11 @@ import { hojeISO } from "@/lib/datas";
 import { garantirOcorrencias } from "@/lib/sincronizar";
 import { supabase } from "@/lib/supabase";
 import { AppProvider, carregarBase, type DadosBase } from "./app-contexto";
-import { NavInferior } from "./nav";
+import { BarraLateral, NavInferior } from "./nav";
 import { Onboarding } from "./onboarding";
 import { Botao, Carregando, Erro, formatarErro } from "./ui";
 
-type Estado =
-  | { fase: "carregando" }
-  | { fase: "erro"; mensagem: string }
-  | { fase: "onboarding" }
-  | { fase: "pronto"; base: DadosBase };
+type Estado = { fase: "carregando" } | { fase: "erro"; mensagem: string } | { fase: "onboarding" } | { fase: "pronto"; base: DadosBase };
 
 export function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -67,8 +63,11 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <AppProvider inicial={estado.base}>
-      <div className="mx-auto min-h-dvh max-w-2xl px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
-        {children}
+      <BarraLateral />
+      <div className="lg:pl-64">
+        <div className="mx-auto min-h-dvh max-w-2xl px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-12">
+          {children}
+        </div>
       </div>
       <NavInferior />
     </AppProvider>

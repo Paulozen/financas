@@ -9,10 +9,9 @@ type Variante = "primario" | "secundario" | "perigo" | "fantasma";
 
 const estilosBotao: Record<Variante, string> = {
   primario: "bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-emerald-600/50",
-  secundario:
-    "bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+  secundario: "bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
   perigo: "bg-red-600 text-white hover:bg-red-700",
-  fantasma: "text-slate-700 hover:bg-slate-200 dark:text-slate-200 dark:hover:bg-slate-800",
+  fantasma: "hover:bg-slate-200 dark:hover:bg-slate-800",
 };
 
 export function Botao({
@@ -30,6 +29,9 @@ export function Botao({
       className={clsx(
         "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
         estilosBotao[variante],
+        variante === "fantasma" &&
+          !/(^|\s)text-(red|emerald|slate|sky|amber)-/.test(className ?? "") &&
+          "text-slate-700 dark:text-slate-200",
         className,
       )}
     >
@@ -68,10 +70,7 @@ export function Campo({
   );
 }
 
-export function AreaTexto({
-  rotulo,
-  ...props
-}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { rotulo: string }) {
+export function AreaTexto({ rotulo, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { rotulo: string }) {
   const id = useId();
   return (
     <Rotulo id={id} rotulo={rotulo}>
@@ -137,23 +136,10 @@ export function CampoValor({
   );
 }
 
-export function Interruptor({
-  rotulo,
-  marcado,
-  aoMudar,
-}: {
-  rotulo: string;
-  marcado: boolean;
-  aoMudar: (v: boolean) => void;
-}) {
+export function Interruptor({ rotulo, marcado, aoMudar }: { rotulo: string; marcado: boolean; aoMudar: (v: boolean) => void }) {
   return (
     <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
-      <input
-        type="checkbox"
-        checked={marcado}
-        onChange={(e) => aoMudar(e.target.checked)}
-        className="size-5 accent-emerald-600"
-      />
+      <input type="checkbox" checked={marcado} onChange={(e) => aoMudar(e.target.checked)} className="size-5 accent-emerald-600" />
       {rotulo}
     </label>
   );
@@ -162,10 +148,7 @@ export function Interruptor({
 export function Cartao({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <section
-      className={clsx(
-        "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900",
-        className,
-      )}
+      className={clsx("rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900", className)}
     >
       {children}
     </section>
@@ -273,7 +256,12 @@ export function Modal({
       <div className="relative max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl dark:bg-slate-900">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{titulo}</h2>
-          <button type="button" onClick={aoFechar} aria-label="Fechar" className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <button
+            type="button"
+            onClick={aoFechar}
+            aria-label="Fechar"
+            className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
             <X className="size-5" />
           </button>
         </div>

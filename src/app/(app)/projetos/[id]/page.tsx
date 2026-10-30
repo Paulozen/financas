@@ -41,7 +41,12 @@ export default function DetalheProjeto() {
     ]);
     const ids = (itens as ProjetoItem[]).map((i) => i.id);
     const parcelas = ids.length
-      ? await buscarTodos<Ocorrencia>("ocorrencias", casa.id, (q) => q.eq("origem_tipo", "parcela_projeto").in("origem_id", ids), "vencimento")
+      ? await buscarTodos<Ocorrencia>(
+          "ocorrencias",
+          casa.id,
+          (q) => q.eq("origem_tipo", "parcela_projeto").in("origem_id", ids),
+          "vencimento",
+        )
       : [];
     return { projeto: projeto as Projeto | null, itens: itens as ProjetoItem[], parcelas };
   });
@@ -60,7 +65,16 @@ export default function DetalheProjeto() {
     try {
       const sb = supabase();
       if (removerPendentes && itens.length)
-        checar(await sb.from("ocorrencias").delete().in("origem_id", itens.map((i) => i.id)).eq("status", "pendente"));
+        checar(
+          await sb
+            .from("ocorrencias")
+            .delete()
+            .in(
+              "origem_id",
+              itens.map((i) => i.id),
+            )
+            .eq("status", "pendente"),
+        );
       checar(await sb.from("projetos").delete().eq("id", p!.id));
       await sincronizar();
       router.push("/projetos");
@@ -85,71 +99,73 @@ export default function DetalheProjeto() {
         {p.data_evento && p.data_evento >= hoje && ` · faltam ${Math.ceil((Date.parse(p.data_evento) - Date.parse(hoje)) / 86400000)} dias`}
       </p>
 
-      <Cartao className="mb-4">
-        <div className="mb-3 grid grid-cols-2 gap-3 text-sm">
-          <Info rotulo="Orçamento" valor={p.orcamento} />
-          <Info rotulo="Orçado nos itens" valor={r.orcado} />
-          <Info rotulo="Contratado" valor={r.contratado} />
-          <Info rotulo="Pago" valor={r.pago} />
-          <Info rotulo="Falta pagar" valor={r.faltaPagar} destaque />
-          <Info rotulo="Livre no orçamento" valor={p.orcamento - Math.max(r.contratado, r.orcado)} sinal />
+      <div className="lg:grid lg:grid-cols-[1fr_1.2fr] lg:items-start lg:gap-4">
+        <div>
+          <Cartao className="mb-4">
+            <div className="mb-3 grid grid-cols-2 gap-3 text-sm">
+              <Info rotulo="Orçamento" valor={p.orcamento} />
+              <Info rotulo="Orçado nos itens" valor={r.orcado} />
+              <Info rotulo="Contratado" valor={r.contratado} />
+              <Info rotulo="Pago" valor={r.pago} />
+              <Info rotulo="Falta pagar" valor={r.faltaPagar} destaque />
+              <Info rotulo="Livre no orçamento" valor={p.orcamento - Math.max(r.contratado, r.orcado)} sinal />
+            </div>
+            <Barra valor={r.pago} total={r.contratado} />
+            <p className="mt-1 text-xs text-slate-500">
+              {r.contratado > 0 ? Math.round((r.pago / r.contratado) * 100) : 0}% do contratado já foi pago
+            </p>
+          </Cartao>
+
+          {proximas.length > 0 && (
+            <Cartao className="mb-4">
+              <Titulo>Próximas parcelas</Titulo>
+              <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                {proximas.map((o) => (
+                  <LinhaOcorrencia key={o.id} o={o} aoAbrir={() => setAberta(o)} aoPagar={() => setPagando(o)} />
+                ))}
+              </ul>
+            </Cartao>
+          )}
         </div>
-        <Barra valor={r.pago} total={r.contratado} />
-        <p className="mt-1 text-xs text-slate-500">
-          {r.contratado > 0 ? Math.round((r.pago / r.contratado) * 100) : 0}% do contratado já foi pago
-        </p>
-      </Cartao>
-
-      {proximas.length > 0 && (
         <Cartao className="mb-4">
-          <Titulo>Próximas parcelas</Titulo>
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-            {proximas.map((o) => (
-              <LinhaOcorrencia key={o.id} o={o} aoAbrir={() => setAberta(o)} aoPagar={() => setPagando(o)} />
-            ))}
-          </ul>
+          <Titulo
+            acao={
+              <Botao variante="fantasma" className="!min-h-9" onClick={() => setItemForm("novo")}>
+                <Plus className="size-4" /> Item
+              </Botao>
+            }
+          >
+            Itens
+          </Titulo>
+          {itens.length === 0 ? (
+            <Vazio titulo="Nenhum item" texto="Adicione os fornecedores: buffet, local, fotografia..." />
+          ) : (
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              {itens.map((i) => {
+                const ri = resumoProjeto([i], parcelas);
+                return (
+                  <li key={i.id}>
+                    <button type="button" onClick={() => setItemAberto(i.id)} className="flex w-full flex-col gap-1 py-3 text-left">
+                      <span className="flex items-center gap-2">
+                        <span className="flex-1 truncate font-medium">{i.descricao}</span>
+                        <Selo cor={COR_STATUS[i.status]}>{i.status}</Selo>
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {[i.tipo_item, i.fornecedor].filter(Boolean).join(" · ")}
+                        {i.valor_contratado > 0
+                          ? ` · pago ${formatarReais(ri.pago)} de ${formatarReais(i.valor_contratado)}`
+                          : ` · orçado ${formatarReais(i.valor_orcado)}`}
+                      </span>
+                      {i.valor_contratado > 0 && <Barra valor={ri.pago} total={i.valor_contratado} />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </Cartao>
-      )}
-
-      <Cartao className="mb-4">
-        <Titulo
-          acao={
-            <Botao variante="fantasma" className="!min-h-9" onClick={() => setItemForm("novo")}>
-              <Plus className="size-4" /> Item
-            </Botao>
-          }
-        >
-          Itens
-        </Titulo>
-        {itens.length === 0 ? (
-          <Vazio titulo="Nenhum item" texto="Adicione os fornecedores: buffet, local, fotografia..." />
-        ) : (
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-            {itens.map((i) => {
-              const ri = resumoProjeto([i], parcelas);
-              return (
-                <li key={i.id}>
-                  <button type="button" onClick={() => setItemAberto(i.id)} className="flex w-full flex-col gap-1 py-3 text-left">
-                    <span className="flex items-center gap-2">
-                      <span className="flex-1 truncate font-medium">{i.descricao}</span>
-                      <Selo cor={COR_STATUS[i.status]}>{i.status}</Selo>
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      {[i.tipo_item, i.fornecedor].filter(Boolean).join(" · ")}
-                      {i.valor_contratado > 0
-                        ? ` · pago ${formatarReais(ri.pago)} de ${formatarReais(i.valor_contratado)}`
-                        : ` · orçado ${formatarReais(i.valor_orcado)}`}
-                    </span>
-                    {i.valor_contratado > 0 && <Barra valor={ri.pago} total={i.valor_contratado} />}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Cartao>
-
-      <Botao variante="fantasma" className="w-full text-red-600" onClick={() => setExcluindo(true)}>
+      </div>
+      <Botao variante="fantasma" className="w-full text-red-600 lg:w-auto" onClick={() => setExcluindo(true)}>
         Excluir projeto
       </Botao>
       <Erro mensagem={erroAcao} />
@@ -193,7 +209,9 @@ export default function DetalheProjeto() {
       {excluindo && (
         <Modal aberto aoFechar={() => setExcluindo(false)} titulo={`Excluir “${p.nome}”?`}>
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-slate-500">Os itens serão excluídos. O que fazer com as parcelas ainda pendentes? As pagas ficam no histórico.</p>
+            <p className="text-sm text-slate-500">
+              Os itens serão excluídos. O que fazer com as parcelas ainda pendentes? As pagas ficam no histórico.
+            </p>
             <Botao variante="perigo" onClick={() => excluirProjeto(true)}>
               Excluir e remover parcelas pendentes
             </Botao>

@@ -45,8 +45,17 @@ export default function Importar() {
   const [erro, setErro] = useState<string | null>(null);
   const [lendo, setLendo] = useState(false);
 
-  const historico = useCarregar("importacoes", async () =>
-    checar(await supabase().from("importacoes").select("id, arquivo, perfil, contagens, criado_em").eq("casa_id", casa.id).order("criado_em", { ascending: false }).limit(20)) as Importacao[],
+  const historico = useCarregar(
+    "importacoes",
+    async () =>
+      checar(
+        await supabase()
+          .from("importacoes")
+          .select("id, arquivo, perfil, contagens, criado_em")
+          .eq("casa_id", casa.id)
+          .order("criado_em", { ascending: false })
+          .limit(20),
+      ) as Importacao[],
   );
 
   async function prepararPrevia(nome: string, perfil: Perfil, transacoes: TransacaoExtrato[], descartadas: number) {
@@ -58,11 +67,17 @@ export default function Importar() {
       buscarTodos<RegraAprendida>("regras_importacao", casa.id),
       datas.length
         ? buscarTodos<Ocorrencia>("ocorrencias", casa.id, (q) =>
-            q.eq("status", "pendente").gte("vencimento", somarDias(datas[0], -5)).lte("vencimento", somarDias(datas.at(-1)!, 5)),
+            q
+              .eq("status", "pendente")
+              .gte("vencimento", somarDias(datas[0], -5))
+              .lte("vencimento", somarDias(datas.at(-1)!, 5)),
           )
         : Promise.resolve([]),
     ]);
-    const racha = casa.racha_ativo && casa.racha_membro_id && casa.racha_membro_id === dono ? { mensalidade: casa.racha_mensalidade, diaria: casa.racha_diaria } : null;
+    const racha =
+      casa.racha_ativo && casa.racha_membro_id && casa.racha_membro_id === dono
+        ? { mensalidade: casa.racha_mensalidade, diaria: casa.racha_diaria }
+        : null;
     const usados = new Set<string>();
     const linhas: LinhaPrevia[] = transacoes.map((t, i) => {
       const s = sugerir(t, { regras, pendentes: pendentes.filter((p) => !usados.has(p.id)), racha });
@@ -89,7 +104,12 @@ export default function Importar() {
     try {
       const lido = await lerArquivo(arquivo.name, await arquivo.arrayBuffer());
       if (lido.formato === "ofx") {
-        await prepararPrevia(arquivo.name, { id: "ofx", nome: "OFX", assinatura: "ofx", mapeamento: { cabecalho: 0, data: 0, descricao: [] } }, lido.transacoes, 0);
+        await prepararPrevia(
+          arquivo.name,
+          { id: "ofx", nome: "OFX", assinatura: "ofx", mapeamento: { cabecalho: 0, data: 0, descricao: [] } },
+          lido.transacoes,
+          0,
+        );
         return;
       }
       if (!lido.linhas.length) throw new Error("Não encontrei dados neste arquivo.");
@@ -114,7 +134,7 @@ export default function Importar() {
     <>
       <Cabecalho titulo="Importar extrato" semVisao />
       {etapa.tipo === "arquivo" && (
-        <>
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
           <Cartao className="mb-4">
             <div className="flex flex-col gap-4">
               <SeletorDono rotulo="De quem é este extrato?" valor={dono} aoMudar={setDono} membros={membros} />
@@ -154,7 +174,7 @@ export default function Importar() {
               </ul>
             )}
           </Cartao>
-        </>
+        </div>
       )}
 
       {etapa.tipo === "mapear" && (
@@ -225,7 +245,9 @@ async function buscarHashesExistentes(casaId: string, hashes: string[]): Promise
   const existentes = new Set<string>();
   for (let i = 0; i < hashes.length; i += 80) {
     const parte = hashes.slice(i, i + 80);
-    const dados = checar(await supabase().from("transacoes_importadas").select("hash").eq("casa_id", casaId).in("hash", parte)) as { hash: string }[];
+    const dados = checar(await supabase().from("transacoes_importadas").select("hash").eq("casa_id", casaId).in("hash", parte)) as {
+      hash: string;
+    }[];
     for (const d of dados) existentes.add(d.hash);
   }
   return existentes;

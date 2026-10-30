@@ -12,13 +12,13 @@ export function Cabecalho({ titulo, acao, semVisao }: { titulo: string; acao?: R
   const { membros, visao, setVisao } = useApp();
   const opcoes = [...membros.map((m) => ({ id: m.id, nome: m.nome })), { id: CASAL, nome: "Casal" }];
   return (
-    <header className="mb-4 flex flex-col gap-3">
+    <header className="mb-4 flex flex-col gap-3 lg:mb-6 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">{titulo}</h1>
+        <h1 className="text-xl font-bold lg:text-2xl">{titulo}</h1>
         {acao}
       </div>
       {!semVisao && (
-        <div role="radiogroup" aria-label="Visão" className="flex gap-1 rounded-xl bg-slate-200 p-1 dark:bg-slate-800">
+        <div role="radiogroup" aria-label="Visão" className="flex gap-1 rounded-xl bg-slate-200 p-1 lg:w-96 dark:bg-slate-800">
           {opcoes.map((o) => (
             <button
               key={o.id}
@@ -44,7 +44,7 @@ export function SeletorMes() {
   const { mes, setMes } = useApp();
   const atual = mesDe(hojeISO());
   return (
-    <div className="mb-4 flex items-center justify-between">
+    <div className="mb-4 flex items-center justify-between lg:justify-start lg:gap-2">
       <button
         type="button"
         onClick={() => setMes(somarMeses(mes, -1))}
@@ -56,7 +56,7 @@ export function SeletorMes() {
       <button
         type="button"
         onClick={() => setMes(atual)}
-        className="text-base font-semibold capitalize"
+        className="text-base font-semibold first-letter:uppercase lg:min-w-48 lg:text-lg"
         title="Voltar para o mês atual"
       >
         {nomeMes(mes)}

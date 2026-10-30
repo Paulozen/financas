@@ -83,3 +83,8 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **README** reescrito em português (rodar localmente, migrações, Vercel, instalar no celular).
 - **Login** redireciona para o app quando já existe sessão.
 - Verificado: a API REST nega acesso anônimo (401) e a URL do banco (`SUPABASE_DB_URL`) não aparece no código enviado ao navegador.
+
+## Depois da entrega
+
+- **Layout de computador (≥ 1024 px):** menu lateral fixo no lugar da barra inferior, conteúdo até 1152 px e telas em duas colunas (Painel em grade; Lançamentos com mês/totais/filtros à esquerda e lista à direita; detalhes de parcelado, dívida e projeto lado a lado). No celular nada muda.
+- **Conferência visual** feita com navegador headless e um Supabase simulado (dados inventados, nada do banco real), no tamanho de computador, celular e no modo escuro.

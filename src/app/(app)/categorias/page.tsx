@@ -9,7 +9,20 @@ import { checar } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import type { Categoria, Tipo } from "@/lib/tipos";
 
-const CORES = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#ec4899", "#0ea5e9", "#a855f7", "#b45309", "#14b8a6", "#64748b", "#84cc16", "#f97316"];
+const CORES = [
+  "#6366f1",
+  "#22c55e",
+  "#f59e0b",
+  "#ef4444",
+  "#ec4899",
+  "#0ea5e9",
+  "#a855f7",
+  "#b45309",
+  "#14b8a6",
+  "#64748b",
+  "#84cc16",
+  "#f97316",
+];
 
 export default function Categorias() {
   const { categorias } = useApp();
@@ -45,8 +58,10 @@ export default function Categorias() {
   return (
     <>
       <Cabecalho titulo="Categorias" semVisao />
-      {grupo("saida", "Saídas")}
-      {grupo("entrada", "Entradas")}
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
+        {grupo("saida", "Saídas")}
+        {grupo("entrada", "Entradas")}
+      </div>
       {editando && <FormCategoria alvo={editando} aoFechar={() => setEditando(null)} />}
     </>
   );

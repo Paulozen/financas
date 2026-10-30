@@ -6,7 +6,21 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import { daVisao, useApp, useCarregar } from "@/components/app-contexto";
 import { Cabecalho } from "@/components/cabecalho";
 import { SeletorDono } from "@/components/ocorrencias";
-import { AreaTexto, Botao, Campo, CampoValor, Cartao, Carregando, Dinheiro, Erro, formatarErro, Interruptor, Modal, Titulo, Vazio } from "@/components/ui";
+import {
+  AreaTexto,
+  Botao,
+  Campo,
+  CampoValor,
+  Cartao,
+  Carregando,
+  Dinheiro,
+  Erro,
+  formatarErro,
+  Interruptor,
+  Modal,
+  Titulo,
+  Vazio,
+} from "@/components/ui";
 import { formatarData, formatarDiaMes, hojeISO } from "@/lib/datas";
 import { buscarTodos, checar } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
@@ -39,24 +53,26 @@ export default function Reservas() {
         <Carregando />
       ) : (
         <>
-          <Cartao className="mb-4 text-center">
-            <p className="text-sm text-slate-500">Total guardado</p>
-            <Dinheiro valor={totalGuardado(reservas, saldos)} className="text-3xl font-bold" />
-            <p className="mt-1 text-xs text-slate-500">Não entra na sobra do mês nem na projeção.</p>
-          </Cartao>
+          <div className="lg:grid lg:grid-cols-[18rem_1fr] lg:items-start lg:gap-4">
+            <Cartao className="mb-4 text-center lg:py-10">
+              <p className="text-sm text-slate-500">Total guardado</p>
+              <Dinheiro valor={totalGuardado(reservas, saldos)} className="text-3xl font-bold" />
+              <p className="mt-1 text-xs text-slate-500">Não entra na sobra do mês nem na projeção.</p>
+            </Cartao>
 
-          {ativas.length > 0 && saldos.some((s) => ativas.some((r) => r.id === s.reserva_id)) && (
-            <GraficoReservas reservas={ativas} saldos={saldos} />
-          )}
+            {ativas.length > 0 && saldos.some((s) => ativas.some((r) => r.id === s.reserva_id)) && (
+              <GraficoReservas reservas={ativas} saldos={saldos} />
+            )}
+          </div>
 
-          <Botao className="mb-4 w-full" onClick={() => setForm("nova")}>
+          <Botao className="mb-4 w-full lg:w-auto" onClick={() => setForm("nova")}>
             <Plus className="size-4" /> Nova reserva
           </Botao>
 
           {reservas.length === 0 ? (
             <Vazio titulo="Nenhuma reserva" texto="Cadastre seus CDBs e atualize o saldo de vez em quando para acompanhar a evolução." />
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="grid gap-3 lg:grid-cols-2">
               {reservas.map((r) => {
                 const s = saldoAtual(r.id, saldos);
                 return (
@@ -91,7 +107,9 @@ export default function Reservas() {
         </>
       )}
       {form && <FormReserva reserva={form === "nova" ? undefined : form} aoFechar={() => setForm(null)} />}
-      {atualizando && <FormSaldo reserva={atualizando} atual={saldoAtual(atualizando.id, saldos)?.valor ?? 0} aoFechar={() => setAtualizando(null)} />}
+      {atualizando && (
+        <FormSaldo reserva={atualizando} atual={saldoAtual(atualizando.id, saldos)?.valor ?? 0} aoFechar={() => setAtualizando(null)} />
+      )}
       {historico && (
         <Historico reserva={historico} saldos={saldos.filter((s) => s.reserva_id === historico.id)} aoFechar={() => setHistorico(null)} />
       )}
@@ -111,14 +129,27 @@ function GraficoReservas({ reservas, saldos }: { reservas: Reserva[]; saldos: Re
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={dados} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid stroke={cores.grade} vertical={false} />
-            <XAxis dataKey="data" tickFormatter={(d: string) => formatarDiaMes(d)} tick={{ fill: cores.textoSecundario, fontSize: 11 }} stroke={cores.grade} />
-            <YAxis tickFormatter={reaisCurto} tick={{ fill: cores.textoSecundario, fontSize: 11 }} stroke={cores.grade} width={48} />
+            <XAxis
+              dataKey="data"
+              tickFormatter={(d: string) => formatarDiaMes(d)}
+              tick={{ fill: cores.textoSecundario, fontSize: 11 }}
+              stroke={cores.grade}
+            />
+            <YAxis tickFormatter={reaisCurto} tick={{ fill: cores.textoSecundario, fontSize: 11 }} stroke={cores.grade} width={60} />
             <Tooltip
               formatter={(v) => formatarReais(Number(v))}
               labelFormatter={(d) => formatarData(String(d))}
               contentStyle={{ background: cores.superficie, borderColor: cores.grade, borderRadius: 12, color: cores.texto }}
             />
-            <Line type="monotone" dataKey="total" name="Total" stroke={cores.serie[0]} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+            <Line
+              type="monotone"
+              dataKey="total"
+              name="Total"
+              stroke={cores.serie[0]}
+              strokeWidth={2}
+              dot={{ r: 4 }}
+              activeDot={{ r: 6 }}
+            />
             {comLinha.map((r, i) => (
               <Line
                 key={r.id}
@@ -132,7 +163,9 @@ function GraficoReservas({ reservas, saldos }: { reservas: Reserva[]; saldos: Re
                 connectNulls
               />
             ))}
-            {comLinha.length > 0 && <Legend wrapperStyle={{ fontSize: 12, color: cores.textoSecundario }} />}
+            {comLinha.length > 0 && (
+              <Legend wrapperStyle={{ fontSize: 12 }} formatter={(v) => <span style={{ color: cores.textoSecundario }}>{v}</span>} />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -156,7 +189,14 @@ function FormReserva({ reserva, aoFechar }: { reserva?: Reserva; aoFechar: () =>
     if (!nome.trim()) return setErro("Informe o nome.");
     setSalvando(true);
     try {
-      const dados = { casa_id: casa.id, nome: nome.trim(), banco: banco.trim() || null, dono_membro_id: dono || null, observacao: obs.trim() || null, ativa };
+      const dados = {
+        casa_id: casa.id,
+        nome: nome.trim(),
+        banco: banco.trim() || null,
+        dono_membro_id: dono || null,
+        observacao: obs.trim() || null,
+        ativa,
+      };
       const sb = supabase();
       if (reserva) checar(await sb.from("reservas").update(dados).eq("id", reserva.id));
       else {

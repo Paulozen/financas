@@ -65,77 +65,97 @@ export default function Racha() {
         <Carregando />
       ) : (
         <>
-          <Cartao className={clsx("mb-4 text-center", saldo < 0 && "border-red-300 dark:border-red-900")}>
-            <p className="text-sm text-slate-500">Saldo do caixa</p>
-            <Dinheiro valor={saldo} sinal className="text-3xl font-bold" />
-            {saldo < 0 && (
-              <p className="mt-2 flex items-center justify-center gap-1 text-sm font-medium text-red-600 dark:text-red-400">
-                <AlertTriangle className="size-4" aria-hidden /> Você está cobrindo do seu bolso
-              </p>
-            )}
-          </Cartao>
+          <div className="lg:grid lg:grid-cols-[22rem_1fr] lg:items-start lg:gap-6">
+            <div className="lg:sticky lg:top-6">
+              <Cartao className={clsx("mb-4 text-center", saldo < 0 && "border-red-300 dark:border-red-900")}>
+                <p className="text-sm text-slate-500">Saldo do caixa</p>
+                <Dinheiro valor={saldo} sinal className="text-3xl font-bold" />
+                {saldo < 0 && (
+                  <p className="mt-2 flex items-center justify-center gap-1 text-sm font-medium text-red-600 dark:text-red-400">
+                    <AlertTriangle className="size-4" aria-hidden /> Você está cobrindo do seu bolso
+                  </p>
+                )}
+              </Cartao>
 
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            <Botao onClick={() => setNovo("mensalidade")}>
-              <Plus className="size-4" /> Mensalidade
-            </Botao>
-            <Botao onClick={() => setNovo("diaria")}>
-              <Plus className="size-4" /> Diária
-            </Botao>
-            <Botao onClick={() => setNovo("amistoso")}>
-              <Plus className="size-4" /> Amistoso
-            </Botao>
-            <Botao variante="perigo" onClick={() => setNovo("juiz")}>
-              <Minus className="size-4" /> Juiz
-            </Botao>
-            <Botao variante="secundario" className="col-span-2" onClick={() => setNovo("outro")}>
-              Outro movimento
-            </Botao>
-          </div>
-
-          <div className="mb-3 flex items-center justify-between">
-            <button type="button" aria-label="Mês anterior" onClick={() => setMes(somarMeses(mes, -1))} className="rounded-full p-2 hover:bg-slate-200 dark:hover:bg-slate-800">
-              <ChevronLeft className="size-5" />
-            </button>
-            <span className="font-semibold capitalize">{nomeMes(mes)}</span>
-            <button type="button" aria-label="Próximo mês" onClick={() => setMes(somarMeses(mes, 1))} className="rounded-full p-2 hover:bg-slate-200 dark:hover:bg-slate-800">
-              <ChevronRight className="size-5" />
-            </button>
-          </div>
-          <Cartao className="mb-4">
-            <div className="mb-2 grid grid-cols-2 text-center text-sm">
-              <div>
-                <p className="text-slate-500">Entrou</p>
-                <Dinheiro valor={resumo.entrou} className="font-semibold text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-slate-500">Saiu</p>
-                <Dinheiro valor={resumo.saiu} className="font-semibold text-red-600 dark:text-red-400" />
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                <Botao onClick={() => setNovo("mensalidade")}>
+                  <Plus className="size-4" /> Mensalidade
+                </Botao>
+                <Botao onClick={() => setNovo("diaria")}>
+                  <Plus className="size-4" /> Diária
+                </Botao>
+                <Botao onClick={() => setNovo("amistoso")}>
+                  <Plus className="size-4" /> Amistoso
+                </Botao>
+                <Botao variante="perigo" onClick={() => setNovo("juiz")}>
+                  <Minus className="size-4" /> Juiz
+                </Botao>
+                <Botao variante="secundario" className="col-span-2" onClick={() => setNovo("outro")}>
+                  Outro movimento
+                </Botao>
               </div>
             </div>
-            {doMes.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-500">Nenhum movimento neste mês.</p>
-            ) : (
-              <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                {doMes.map((m) => (
-                  <li key={m.id} className="flex items-center gap-2 py-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {ROTULO_RACHA[m.tipo]} {m.descricao && <span className="font-normal text-slate-500">· {m.descricao}</span>}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {formatarData(m.data)} {m.transacao_importada_id && <Selo cor="azul">importado</Selo>}
-                      </p>
-                    </div>
-                    <Dinheiro valor={m.sentido === "entrada" ? m.valor : -m.valor} sinal className="text-sm font-semibold" />
-                    <button type="button" onClick={() => excluir(m)} className="text-xs text-slate-400 hover:text-red-600" aria-label="Excluir movimento">
-                      excluir
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Cartao>
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <button
+                  type="button"
+                  aria-label="Mês anterior"
+                  onClick={() => setMes(somarMeses(mes, -1))}
+                  className="rounded-full p-2 hover:bg-slate-200 dark:hover:bg-slate-800"
+                >
+                  <ChevronLeft className="size-5" />
+                </button>
+                <span className="font-semibold first-letter:uppercase">{nomeMes(mes)}</span>
+                <button
+                  type="button"
+                  aria-label="Próximo mês"
+                  onClick={() => setMes(somarMeses(mes, 1))}
+                  className="rounded-full p-2 hover:bg-slate-200 dark:hover:bg-slate-800"
+                >
+                  <ChevronRight className="size-5" />
+                </button>
+              </div>
+              <Cartao className="mb-4">
+                <div className="mb-2 grid grid-cols-2 text-center text-sm">
+                  <div>
+                    <p className="text-slate-500">Entrou</p>
+                    <Dinheiro valor={resumo.entrou} className="font-semibold text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Saiu</p>
+                    <Dinheiro valor={resumo.saiu} className="font-semibold text-red-600 dark:text-red-400" />
+                  </div>
+                </div>
+                {doMes.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-slate-500">Nenhum movimento neste mês.</p>
+                ) : (
+                  <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {doMes.map((m) => (
+                      <li key={m.id} className="flex items-center gap-2 py-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {ROTULO_RACHA[m.tipo]} {m.descricao && <span className="font-normal text-slate-500">· {m.descricao}</span>}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatarData(m.data)} {m.transacao_importada_id && <Selo cor="azul">importado</Selo>}
+                          </p>
+                        </div>
+                        <Dinheiro valor={m.sentido === "entrada" ? m.valor : -m.valor} sinal className="text-sm font-semibold" />
+                        <button
+                          type="button"
+                          onClick={() => excluir(m)}
+                          className="text-xs text-slate-400 hover:text-red-600"
+                          aria-label="Excluir movimento"
+                        >
+                          excluir
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Cartao>
+            </div>
+          </div>
         </>
       )}
       {novo && (
@@ -154,7 +174,8 @@ export default function Racha() {
 
 function FormMovimento({ tipo, aoFechar, aoSalvar }: { tipo: RachaTipo; aoFechar: () => void; aoSalvar: () => void }) {
   const { casa } = useApp();
-  const padrao = tipo === "mensalidade" ? casa.racha_mensalidade : tipo === "diaria" ? casa.racha_diaria : tipo === "juiz" ? casa.racha_juiz : 0;
+  const padrao =
+    tipo === "mensalidade" ? casa.racha_mensalidade : tipo === "diaria" ? casa.racha_diaria : tipo === "juiz" ? casa.racha_juiz : 0;
   const comQuantidade = tipo === "mensalidade" || tipo === "diaria" || tipo === "juiz";
   const [quantidade, setQuantidade] = useState("1");
   const [unitario, setUnitario] = useState(padrao);
@@ -199,7 +220,14 @@ function FormMovimento({ tipo, aoFechar, aoSalvar }: { tipo: RachaTipo; aoFechar
           />
         )}
         {comQuantidade && (
-          <Campo rotulo="Quantidade" type="number" inputMode="numeric" min={1} value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
+          <Campo
+            rotulo="Quantidade"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={quantidade}
+            onChange={(e) => setQuantidade(e.target.value)}
+          />
         )}
         <CampoValor rotulo={comQuantidade ? "Valor de cada" : "Valor"} valor={unitario} aoMudar={setUnitario} autoFocus={!comQuantidade} />
         {comQuantidade && qtd > 1 && (

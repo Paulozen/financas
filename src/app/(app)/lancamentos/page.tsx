@@ -39,6 +39,8 @@ function DoMes() {
   const [aberta, setAberta] = useState<Ocorrencia | null>(null);
   const [pagando, setPagando] = useState<Ocorrencia | null>(null);
   const [novo, setNovo] = useState(false);
+  // No computador os filtros já começam abertos (a tela só é montada no navegador).
+  const [filtrosAbertos] = useState(() => window.matchMedia("(min-width: 1024px)").matches);
 
   const { dados, erro, carregando } = useCarregar(`lanc:${mes}`, () =>
     buscarTodos<Ocorrencia>(
@@ -67,92 +69,105 @@ function DoMes() {
   const saidas = soma("saida");
 
   return (
-    <>
-      <SeletorMes />
-      <Cartao className="mb-4">
-        <div className="grid grid-cols-3 gap-2 text-center text-sm">
-          <div>
-            <p className="text-slate-500">Entradas</p>
-            <Dinheiro valor={entradas} className="font-semibold text-emerald-600 dark:text-emerald-400" />
+    <div className="lg:grid lg:grid-cols-[22rem_1fr] lg:items-start lg:gap-6">
+      <div className="lg:sticky lg:top-6">
+        <SeletorMes />
+        <Cartao className="mb-4">
+          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+            <div>
+              <p className="text-slate-500">Entradas</p>
+              <Dinheiro valor={entradas} className="font-semibold text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-slate-500">Saídas</p>
+              <Dinheiro valor={saidas} className="font-semibold text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <p className="text-slate-500">Saldo</p>
+              <Dinheiro valor={entradas - saidas} sinal className="font-semibold" />
+            </div>
           </div>
-          <div>
-            <p className="text-slate-500">Saídas</p>
-            <Dinheiro valor={saidas} className="font-semibold text-red-600 dark:text-red-400" />
-          </div>
-          <div>
-            <p className="text-slate-500">Saldo</p>
-            <Dinheiro valor={entradas - saidas} sinal className="font-semibold" />
-          </div>
-        </div>
-        <p className="mt-2 text-center text-xs text-slate-500">
-          Realizado: {formatarReais(soma("entrada", true))} entrou · {formatarReais(soma("saida", true))} saiu
-        </p>
-      </Cartao>
-
-      <details className="mb-4">
-        <summary className="cursor-pointer text-sm font-medium text-slate-600 dark:text-slate-400">Filtros</summary>
-        <div className="mt-2 grid grid-cols-2 gap-3">
-          <Selecao rotulo="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} vazio="Todos" opcoes={[{ valor: "entrada", rotulo: "Entradas" }, { valor: "saida", rotulo: "Saídas" }]} />
-          <Selecao
-            rotulo="Status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            vazio="Todos"
-            opcoes={[
-              { valor: "pendente", rotulo: "Pendentes" },
-              { valor: "atrasado", rotulo: "Atrasados" },
-              { valor: "pago", rotulo: "Pagos" },
-              { valor: "cancelado", rotulo: "Cancelados" },
-            ]}
-          />
-          <Selecao
-            rotulo="Categoria"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            vazio="Todas"
-            opcoes={[{ valor: "-", rotulo: "Sem categoria" }, ...categorias.map((c) => ({ valor: c.id, rotulo: c.nome }))]}
-          />
-          <Selecao
-            rotulo="Dono"
-            value={dono}
-            onChange={(e) => setDono(e.target.value)}
-            vazio="Todos"
-            opcoes={[...membros.map((m) => ({ valor: m.id, rotulo: m.nome })), { valor: "casal", rotulo: "Só do casal" }]}
-          />
-        </div>
-      </details>
-
-      <Erro mensagem={erro} />
-      {carregando && !dados ? (
-        <Carregando />
-      ) : lista.length === 0 ? (
-        <Vazio
-          titulo="Nada neste mês"
-          texto="Cadastre seu salário e as contas fixas na aba Recorrentes, ou use o + para um lançamento rápido."
-        />
-      ) : (
-        <Cartao>
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-            {lista.map((o) => (
-              <LinhaOcorrencia key={o.id} o={o} aoAbrir={() => setAberta(o)} aoPagar={() => setPagando(o)} />
-            ))}
-          </ul>
+          <p className="mt-2 text-center text-xs text-slate-500">
+            Realizado: {formatarReais(soma("entrada", true))} entrou · {formatarReais(soma("saida", true))} saiu
+          </p>
         </Cartao>
-      )}
 
-      <button
-        type="button"
-        onClick={() => setNovo(true)}
-        aria-label="Novo lançamento rápido"
-        className="fab fixed right-4 z-30 flex size-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 sm:right-[calc(50%-20rem)]"
-      >
-        <Plus className="size-7" />
-      </button>
+        <details className="mb-4" open={filtrosAbertos}>
+          <summary className="cursor-pointer text-sm font-medium text-slate-600 dark:text-slate-400">Filtros</summary>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            <Selecao
+              rotulo="Tipo"
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value)}
+              vazio="Todos"
+              opcoes={[
+                { valor: "entrada", rotulo: "Entradas" },
+                { valor: "saida", rotulo: "Saídas" },
+              ]}
+            />
+            <Selecao
+              rotulo="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              vazio="Todos"
+              opcoes={[
+                { valor: "pendente", rotulo: "Pendentes" },
+                { valor: "atrasado", rotulo: "Atrasados" },
+                { valor: "pago", rotulo: "Pagos" },
+                { valor: "cancelado", rotulo: "Cancelados" },
+              ]}
+            />
+            <Selecao
+              rotulo="Categoria"
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+              vazio="Todas"
+              opcoes={[{ valor: "-", rotulo: "Sem categoria" }, ...categorias.map((c) => ({ valor: c.id, rotulo: c.nome }))]}
+            />
+            <Selecao
+              rotulo="Dono"
+              value={dono}
+              onChange={(e) => setDono(e.target.value)}
+              vazio="Todos"
+              opcoes={[...membros.map((m) => ({ valor: m.id, rotulo: m.nome })), { valor: "casal", rotulo: "Só do casal" }]}
+            />
+          </div>
+        </details>
+      </div>
+
+      <div>
+        <Erro mensagem={erro} />
+        {carregando && !dados ? (
+          <Carregando />
+        ) : lista.length === 0 ? (
+          <Vazio
+            titulo="Nada neste mês"
+            texto="Cadastre seu salário e as contas fixas na aba Recorrentes, ou use o + para um lançamento rápido."
+          />
+        ) : (
+          <Cartao>
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              {lista.map((o) => (
+                <LinhaOcorrencia key={o.id} o={o} aoAbrir={() => setAberta(o)} aoPagar={() => setPagando(o)} />
+              ))}
+            </ul>
+          </Cartao>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setNovo(true)}
+          aria-label="Novo lançamento rápido"
+          className="fab fixed right-4 z-30 flex size-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 sm:right-[calc(50%-20rem)] lg:right-8"
+        >
+          <Plus className="size-7" />
+        </button>
+      </div>
 
       {novo && <FormPontual aoFechar={() => setNovo(false)} />}
       <ModalOcorrencia o={aberta} aoFechar={() => setAberta(null)} aoPagar={setPagando} />
       <ModalPagar o={pagando} aoFechar={() => setPagando(null)} />
-    </>
+    </div>
   );
 }
 
@@ -198,19 +213,22 @@ function Recorrentes() {
 
   return (
     <>
-      <Botao className="mb-4 w-full" onClick={() => setEditando("nova")}>
+      <Botao className="mb-4 w-full lg:w-auto" onClick={() => setEditando("nova")}>
         <Plus className="size-4" /> Nova receita ou despesa recorrente
       </Botao>
       <Erro mensagem={erro} />
       {carregando && !dados ? (
         <Carregando />
       ) : regras.length === 0 ? (
-        <Vazio titulo="Nenhuma recorrente" texto="Cadastre seu salário para começar. Depois, as contas fixas (aluguel, internet) e as variáveis (luz, água)." />
+        <Vazio
+          titulo="Nenhuma recorrente"
+          texto="Cadastre seu salário para começar. Depois, as contas fixas (aluguel, internet) e as variáveis (luz, água)."
+        />
       ) : (
-        <>
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
           {grupo("entrada", "Receitas")}
           {grupo("saida", "Despesas")}
-        </>
+        </div>
       )}
       {editando && (
         <FormRecorrencia
