@@ -101,3 +101,9 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **"Até o evento":** primeira parcela no dia escolhido do mês atual (ou do próximo, se esse dia já passou) e uma por mês enquanto a data não passar da data do evento do projeto. Valor sugerido = falta parcelar; a última parcela absorve o arredondamento. Sem data do evento, a opção pede para defini-la.
 - **Painel do item:** contratado − já pago antes do app − parcelado = falta parcelar. Aviso âmbar se ainda falta parcelar e vermelho se as parcelas passam do contratado.
 - Editar e excluir parcelas pendentes continuam pelo detalhe da parcela (sem mudança).
+
+## Itens do casamento (scripts/importar-casamento.mjs)
+
+- Script idempotente: acha a casa real (membros Paulo e Laura, sem "[TESTE]"), usa o projeto "Casamento" (cria se faltar) e cria os itens que não existem; para itens já existentes só preenche campos vazios. Não cria parcelas nem ocorrências.
+- **Buffet:** o item já existia com 3 parcelas pagas no app (R$ 4.112,16, vindas do extrato). Para não contar o mesmo pagamento duas vezes, o script desconta do "já pago antes do app" o que já está em parcelas pagas do item; no Buffet isso deu R$ 0. Os totais conferem: contratado R$ 28.792,00, pago R$ 7.834,16 (R$ 3.722,00 antes do app + R$ 4.112,16 em parcelas), falta pagar R$ 20.957,84.
+- Tela do projeto: itens sem tipo/fornecedor não mostram mais o "·" solto; item sem valor mostra "sem valor ainda"; sem orçamento definido, "Livre no orçamento" vira um atalho "Defina o orçamento" em vez de um valor negativo.

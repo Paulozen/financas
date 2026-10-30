@@ -108,7 +108,20 @@ export default function DetalheProjeto() {
               <Info rotulo="Contratado" valor={r.contratado} />
               <Info rotulo="Pago" valor={r.pago} />
               <Info rotulo="Falta pagar" valor={r.faltaPagar} destaque />
-              <Info rotulo="Livre no orçamento" valor={p.orcamento - Math.max(r.contratado, r.orcado)} sinal />
+              {p.orcamento > 0 ? (
+                <Info rotulo="Livre no orçamento" valor={p.orcamento - Math.max(r.contratado, r.orcado)} sinal />
+              ) : (
+                <div>
+                  <p className="text-slate-500">Livre no orçamento</p>
+                  <button
+                    type="button"
+                    onClick={() => setEditando(true)}
+                    className="text-left text-sm text-emerald-700 underline dark:text-emerald-400"
+                  >
+                    Defina o orçamento
+                  </button>
+                </div>
+              )}
             </div>
             <Barra valor={r.pago} total={r.contratado} />
             <p className="mt-1 text-xs text-slate-500">
@@ -151,10 +164,17 @@ export default function DetalheProjeto() {
                         <Selo cor={COR_STATUS[i.status]}>{i.status}</Selo>
                       </span>
                       <span className="text-xs text-slate-500">
-                        {[i.tipo_item, i.fornecedor].filter(Boolean).join(" · ")}
-                        {i.valor_contratado > 0
-                          ? ` · pago ${formatarReais(ri.pago)} de ${formatarReais(i.valor_contratado)}`
-                          : ` · orçado ${formatarReais(i.valor_orcado)}`}
+                        {[
+                          i.tipo_item,
+                          i.fornecedor,
+                          i.valor_contratado > 0
+                            ? `pago ${formatarReais(ri.pago)} de ${formatarReais(i.valor_contratado)}`
+                            : i.valor_orcado > 0
+                              ? `orçado ${formatarReais(i.valor_orcado)}`
+                              : "sem valor ainda",
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                       {i.valor_contratado > 0 && <Barra valor={ri.pago} total={i.valor_contratado} />}
                     </button>
@@ -317,7 +337,9 @@ function ItemDetalhe({
           Parcelas
         </Titulo>
         {parcelas.length === 0 ? (
-          <p className="text-sm text-slate-500">Sem parcelas. Use “+ Parcelas” para lançar uma parcela avulsa, N iguais ou dividir até o evento.</p>
+          <p className="text-sm text-slate-500">
+            Sem parcelas. Use “+ Parcelas” para lançar uma parcela avulsa, N iguais ou dividir até o evento.
+          </p>
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {parcelas.map((o) => (
