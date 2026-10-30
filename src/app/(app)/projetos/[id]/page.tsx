@@ -189,7 +189,7 @@ export default function DetalheProjeto() {
         <FormParcelas
           projeto={p}
           item={parcelasDe}
-          sugestao={parcelasDe.valor_contratado - resumoProjeto([parcelasDe], parcelas).agendado}
+          sugestao={resumoProjeto([parcelasDe], parcelas).faltaParcelar}
           aoFechar={() => setParcelasDe(null)}
         />
       )}
@@ -268,10 +268,12 @@ function ItemDetalhe({
         <dd>{formatarReais(item.valor_orcado)}</dd>
         <dt className="text-slate-500">Contratado</dt>
         <dd>{formatarReais(item.valor_contratado)}</dd>
-        <dt className="text-slate-500">Pago</dt>
+        <dt className="text-slate-500">Já pago antes do app</dt>
+        <dd>{formatarReais(r.pagoAntes)}</dd>
+        <dt className="text-slate-500">Pago (total)</dt>
         <dd>{formatarReais(r.pago)}</dd>
         <dt className="text-slate-500">Em parcelas</dt>
-        <dd>{formatarReais(r.agendado)}</dd>
+        <dd>{formatarReais(r.parcelado)}</dd>
         {item.contato && (
           <>
             <dt className="text-slate-500">Contato</dt>

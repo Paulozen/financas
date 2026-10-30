@@ -30,9 +30,18 @@ export function dividirParcelas(total: number, n: number, primeira: string): { d
 export interface ResumoProjeto {
   orcado: number;
   contratado: number;
+  /** pago antes de usar o app (não gera ocorrência) */
+  pagoAntes: number;
+  /** parcelas pagas no app */
+  pagoParcelas: number;
+  /** pagoAntes + pagoParcelas */
   pago: number;
+  /** contratado − pago (nunca negativo) */
   faltaPagar: number;
-  agendado: number;
+  /** soma das parcelas não canceladas (valor real se paga, senão o previsto) */
+  parcelado: number;
+  /** contratado − pago antes − parcelado (negativo = parcelas passam do contratado) */
+  faltaParcelar: number;
 }
 
 export function resumoProjeto(itens: ProjetoItem[], parcelas: Ocorrencia[]): ResumoProjeto {
@@ -40,7 +49,18 @@ export function resumoProjeto(itens: ProjetoItem[], parcelas: Ocorrencia[]): Res
   const doProjeto = parcelas.filter((p) => p.origem_id && ids.has(p.origem_id) && p.status !== "cancelado");
   const orcado = itens.reduce((s, i) => s + i.valor_orcado, 0);
   const contratado = itens.reduce((s, i) => s + i.valor_contratado, 0);
-  const pago = doProjeto.filter((p) => p.status === "pago").reduce((s, p) => s + (p.valor_real ?? 0), 0);
-  const agendado = doProjeto.reduce((s, p) => s + (p.status === "pago" ? (p.valor_real ?? 0) : p.valor_previsto), 0);
-  return { orcado, contratado, pago, faltaPagar: Math.max(0, contratado - pago), agendado };
+  const pagoAntes = itens.reduce((s, i) => s + (i.valor_pago_antes ?? 0), 0);
+  const pagoParcelas = doProjeto.filter((p) => p.status === "pago").reduce((s, p) => s + (p.valor_real ?? 0), 0);
+  const parcelado = doProjeto.reduce((s, p) => s + (p.status === "pago" ? (p.valor_real ?? 0) : p.valor_previsto), 0);
+  const pago = pagoAntes + pagoParcelas;
+  return {
+    orcado,
+    contratado,
+    pagoAntes,
+    pagoParcelas,
+    pago,
+    faltaPagar: Math.max(0, contratado - pago),
+    parcelado,
+    faltaParcelar: contratado - pagoAntes - parcelado,
+  };
 }

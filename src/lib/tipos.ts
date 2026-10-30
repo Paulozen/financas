@@ -140,6 +140,8 @@ export interface ProjetoItem {
   tipo_item: string | null;
   valor_orcado: number;
   valor_contratado: number;
+  /** pago antes de usar o app: entra nos totais do projeto, mas não gera ocorrência */
+  valor_pago_antes: number;
   contato: string | null;
   observacoes: string | null;
   status: StatusItem;

@@ -88,3 +88,9 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 
 - **Layout de computador (≥ 1024 px):** menu lateral fixo no lugar da barra inferior, conteúdo até 1152 px e telas em duas colunas (Painel em grade; Lançamentos com mês/totais/filtros à esquerda e lista à direita; detalhes de parcelado, dívida e projeto lado a lado). No celular nada muda.
 - **Conferência visual** feita com navegador headless e um Supabase simulado (dados inventados, nada do banco real), no tamanho de computador, celular e no modo escuro.
+
+## Projetos: "Já pago antes do app" (migração 003)
+
+- `projeto_itens.valor_pago_antes` (centavos, padrão 0). Não gera ocorrência, então não entra na sobra nem na projeção.
+- Entra em todos os totais do projeto pela mesma função (`resumoProjeto`), usada no detalhe, na lista de projetos e no Progresso do Painel: pago = pago antes + parcelas pagas; falta pagar = contratado − pago (nunca negativo).
+- O resumo também passa a expor `parcelado` (soma das parcelas não canceladas: real se paga, senão previsto) e `faltaParcelar` = contratado − pago antes − parcelado (pode ser negativo).

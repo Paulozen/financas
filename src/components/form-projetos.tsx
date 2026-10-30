@@ -73,6 +73,7 @@ export function FormItem({ projeto, item, aoFechar }: { projeto: Projeto; item?:
   const [tipoItem, setTipoItem] = useState(item?.tipo_item ?? "");
   const [orcado, setOrcado] = useState(item?.valor_orcado ?? 0);
   const [contratado, setContratado] = useState(item?.valor_contratado ?? 0);
+  const [pagoAntes, setPagoAntes] = useState(item?.valor_pago_antes ?? 0);
   const [contato, setContato] = useState(item?.contato ?? "");
   const [obs, setObs] = useState(item?.observacoes ?? "");
   const [status, setStatus] = useState<StatusItem>(item?.status ?? "orçando");
@@ -92,6 +93,7 @@ export function FormItem({ projeto, item, aoFechar }: { projeto: Projeto; item?:
         tipo_item: tipoItem.trim() || null,
         valor_orcado: orcado,
         valor_contratado: contratado,
+        valor_pago_antes: pagoAntes,
         contato: contato.trim() || null,
         observacoes: obs.trim() || null,
         status,
@@ -122,6 +124,12 @@ export function FormItem({ projeto, item, aoFechar }: { projeto: Projeto; item?:
           <CampoValor rotulo="Orçado" valor={orcado} aoMudar={setOrcado} />
           <CampoValor rotulo="Contratado" valor={contratado} aoMudar={setContratado} />
         </div>
+        <CampoValor
+          rotulo="Já pago antes do app"
+          valor={pagoAntes}
+          aoMudar={setPagoAntes}
+          dica="Conta como pago no projeto, mas não entra na sobra de nenhum mês."
+        />
         <Selecao
           rotulo="Status"
           value={status}
@@ -152,7 +160,7 @@ export function FormParcelas({
 }: {
   projeto: Projeto;
   item: ProjetoItem;
-  /** valor ainda sem parcela (contratado − já agendado) */
+  /** valor ainda sem parcela (contratado − pago antes − parcelado) */
   sugestao: number;
   aoFechar: () => void;
 }) {
