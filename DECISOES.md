@@ -27,3 +27,14 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **Onboarding** por funções `criar_casa` / `entrar_casa` (security definer), que também criam as categorias padrão.
 - **Ícones do PWA** gerados por `scripts/gerar-icones.mjs` (PNG puro, sem dependências). Service worker simples: rede primeiro para páginas, cache para estáticos; dados sempre online.
 - **Visão** (membro/Casal) e **mês** selecionados ficam no contexto do app; a visão é lembrada no `localStorage`.
+
+## Fase 2
+
+- **Motor de ocorrências** (`src/lib/motor.ts`) é uma função pura que devolve o plano (inserir/atualizar/remover); `src/lib/sincronizar.ts` busca as regras, aplica o plano no banco e roda ao abrir o app e depois de cada alteração. Idempotência pela coluna `chave` (`rec:<id>:<aaaa-mm>`, `ctr:<id>:<n>`, `meta:<id>:<aaaa-mm>`) com `unique (casa_id, chave)`.
+- **Primeiro mês gerado** de uma recorrente: o maior entre o mês de início e o mês do cadastro (evita uma fila de "atrasados" ao cadastrar um salário que começou há anos).
+- **"Futuras pendentes"** = pendentes com vencimento de hoje em diante. Pendentes atrasadas não são alteradas pelo motor.
+- **Variáveis:** `valor_manual = false` → previsto = média dos últimos 3 pagos (ou o valor informado se ainda não houver). "Usar este valor como estimativa das próximas" grava o valor na regra e liga `valor_manual`; dá para voltar à média no formulário da regra.
+- **Previsto de uma ocorrência específica** pode ser ajustado no detalhe; ela fica marcada (`previsto_manual`) e o motor não a sobrescreve.
+- **Excluir regra** pergunta se remove as futuras pendentes; se mantiver, as ocorrências ficam órfãs e o motor não mexe mais nelas.
+- **Pontuais** são ocorrências com `origem_tipo = 'pontual'`, sem regra. O campo "origem" das receitas pontuais fica em `ocorrencias.fonte`.
+- **Filtro de dono** na lista do mês complementa a visão global (útil na visão Casal).
