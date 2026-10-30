@@ -16,3 +16,6 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 npm-debug.log*
+
+# instruções locais
+PROMPT_CLAUDE_CODE.md

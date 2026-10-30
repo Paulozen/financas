@@ -18,7 +18,7 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 - **Migrações:** `scripts/migrate.mjs` com `pg`, SSL validado contra `certs/supabase-ca.crt` (CA pública do Supabase, versionada no repositório). O parâmetro `sslmode` da URL é removido para não sobrepor a configuração de SSL.
 - **Planilhas:** `exceljs` (não usei o pacote `xlsx` do npm).
 - **Testes:** Vitest, só para a lógica pura (motor de ocorrências, cálculos, parsers).
-- **PROMPT_CLAUDE_CODE.md** fica fora do Git (arquivo local de instruções).
+- **PROMPT_CLAUDE_CODE.md** fica fora do Git (arquivo local de instruções). Foi versionado por engano na fase 1 e removido do controle na fase 8 (continua no histórico; não contém segredos nem dados dos extratos).
 
 ## Fase 1
 
