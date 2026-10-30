@@ -1,7 +1,8 @@
 "use client";
 
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { paraConfirmacao } from "@/lib/caixa-entrada";
 import { formatarData, formatarDiaMes } from "@/lib/datas";
 import { formatarReais } from "@/lib/dinheiro";
 import type { Perfil, TransacaoExtrato } from "@/lib/importacao/extrato";
@@ -37,14 +38,20 @@ export function Previa({
   descartadas,
   aoCancelar,
   aoConfirmar,
+  caixa = false,
+  detalhe,
 }: {
   nome: string;
-  perfil: Perfil;
+  perfil?: Perfil;
   linhasIniciais: LinhaPrevia[];
   pendentes: Ocorrencia[];
   descartadas: number;
-  aoCancelar: () => void;
+  aoCancelar?: () => void;
   aoConfirmar: (linhas: Record<string, unknown>[]) => Promise<void>;
+  /** Caixa de entrada: agrupa por dia e confirma só as linhas selecionadas. */
+  caixa?: boolean;
+  /** texto extra por linha (ex.: nome da conta) */
+  detalhe?: (l: LinhaPrevia) => string;
 }) {
   const { categorias, membros, casa } = useApp();
   const [linhas, setLinhas] = useState(linhasIniciais);
@@ -75,6 +82,8 @@ export function Previa({
     return true;
   });
   const aImportar = linhas.filter(incluida);
+  // Na caixa de entrada só vai o que estiver selecionado.
+  const aEnviar = caixa ? aImportar.filter((l) => selecionadas.has(l.hash)) : aImportar;
   const contagem = aImportar.reduce<Record<string, number>>((c, l) => ({ ...c, [l.acao]: (c[l.acao] ?? 0) + 1 }), {});
   const jaImportadas = linhas.filter((l) => l.jaImportada).length;
   const selecionaveis = visiveis.filter(incluida);
@@ -100,30 +109,17 @@ export function Previa({
   async function confirmar() {
     setErro(null);
     const usados = new Map<string, number>();
-    for (const l of aImportar) {
+    for (const l of aEnviar) {
       if (l.acao !== "vincular") continue;
       if (!l.vinculo_id) return setErro(`Escolha o lançamento a vincular: ${l.t.descricao} (${formatarData(l.t.data)}).`);
       usados.set(l.vinculo_id, (usados.get(l.vinculo_id) ?? 0) + 1);
     }
     if ([...usados.values()].some((n) => n > 1)) return setErro("O mesmo lançamento previsto foi escolhido para mais de uma linha.");
-    if (!aImportar.length) return setErro("Nenhuma linha para importar.");
+    if (!aEnviar.length) return setErro(caixa ? "Selecione as linhas que quer confirmar." : "Nenhuma linha para importar.");
     setSalvando(true);
     try {
-      await aoConfirmar(
-        aImportar.map((l) => ({
-          hash: l.hash,
-          data: l.t.data,
-          descricao: l.t.descricao,
-          valor: l.t.valor,
-          acao: l.acao,
-          categoria_id: l.acao === "novo" ? l.categoria_id : "",
-          dono_membro_id: l.acao === "novo" ? l.dono : "",
-          racha_tipo: l.acao === "racha" ? l.racha_tipo : "",
-          vinculo_id: l.acao === "vincular" ? l.vinculo_id : null,
-          padrao: l.padrao,
-          aprender: l.acao === "racha" || l.acao === "ignorar" || (l.acao === "novo" && !!l.categoria_id),
-        })),
-      );
+      await aoConfirmar(aEnviar.map(paraConfirmacao));
+      if (caixa) setSalvando(false);
     } catch (e) {
       setErro(formatarErro(e));
       setSalvando(false);
@@ -137,11 +133,12 @@ export function Previa({
       <Cartao className="mb-3">
         <p className="truncate font-semibold">{nome}</p>
         <p className="text-xs text-slate-500">
-          Perfil: {perfil.nome} · {linhas.length} linhas{descartadas ? ` (${descartadas} sem data/valor descartadas)` : ""}
+          {perfil && `Perfil: ${perfil.nome} · `}
+          {linhas.length} linhas{descartadas ? ` (${descartadas} sem data/valor descartadas)` : ""}
           {jaImportadas ? ` · ${jaImportadas} já importadas` : ""}
         </p>
         <p className="mt-2 text-sm">
-          Vão ser importadas <strong>{aImportar.length}</strong>:{" "}
+          {caixa ? "Sugestões para revisar" : "Vão ser importadas"} <strong>{aImportar.length}</strong>:{" "}
           {(Object.keys(ROTULO_ACAO) as Acao[])
             .filter((a) => contagem[a])
             .map((a) => `${contagem[a]} ${ROTULO_ACAO[a].toLowerCase()}`)
@@ -155,7 +152,12 @@ export function Previa({
             <label htmlFor="filtro-tipo" className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Tipo
             </label>
-            <select id="filtro-tipo" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} className={clsx(estiloSelect, "min-h-11")}>
+            <select
+              id="filtro-tipo"
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value)}
+              className={clsx(estiloSelect, "min-h-11")}
+            >
               <option value="">Todos</option>
               <option value="__entradas">Só entradas</option>
               <option value="__saidas">Só saídas</option>
@@ -166,12 +168,22 @@ export function Previa({
               ))}
             </select>
           </div>
-          <Campo rotulo="Importar a partir de" type="date" value={aPartirDe} onChange={(e) => setAPartirDe(e.target.value)} />
+          <Campo
+            rotulo={caixa ? "A partir de" : "Importar a partir de"}
+            type="date"
+            value={aPartirDe}
+            onChange={(e) => setAPartirDe(e.target.value)}
+          />
           <div className="col-span-2">
-            <Campo rotulo="Buscar no texto" placeholder="Nome, tipo..." value={filtroTexto} onChange={(e) => setFiltroTexto(e.target.value)} />
+            <Campo
+              rotulo="Buscar no texto"
+              placeholder="Nome, tipo..."
+              value={filtroTexto}
+              onChange={(e) => setFiltroTexto(e.target.value)}
+            />
           </div>
         </div>
-        <Interruptor rotulo="Mostrar linhas já importadas" marcado={mostrarImportadas} aoMudar={setMostrarImportadas} />
+        {!caixa && <Interruptor rotulo="Mostrar linhas já importadas" marcado={mostrarImportadas} aoMudar={setMostrarImportadas} />}
       </Cartao>
 
       {/* Ações em lote */}
@@ -189,7 +201,12 @@ export function Previa({
         </div>
         {selecionadas.size > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
-            <select aria-label="Ação em lote" value={loteAcao} onChange={(e) => setLoteAcao(e.target.value as Acao)} className={estiloSelect}>
+            <select
+              aria-label="Ação em lote"
+              value={loteAcao}
+              onChange={(e) => setLoteAcao(e.target.value as Acao)}
+              className={estiloSelect}
+            >
               {(["novo", "racha", "ignorar"] as Acao[]).map((a) => (
                 <option key={a} value={a}>
                   {ROTULO_ACAO[a]}
@@ -199,7 +216,12 @@ export function Previa({
             <Botao variante="secundario" className="!min-h-9 !px-3" onClick={() => aplicarLote(() => ({ acao: loteAcao }))}>
               Aplicar ação
             </Botao>
-            <select aria-label="Categoria em lote" value={loteCategoria} onChange={(e) => setLoteCategoria(e.target.value)} className={estiloSelect}>
+            <select
+              aria-label="Categoria em lote"
+              value={loteCategoria}
+              onChange={(e) => setLoteCategoria(e.target.value)}
+              className={estiloSelect}
+            >
               <option value="">Sem categoria</option>
               {categorias
                 .filter((c) => c.ativa)
@@ -215,7 +237,9 @@ export function Previa({
               onClick={() => {
                 const cat = categorias.find((c) => c.id === loteCategoria);
                 // Só aplica a categoria nas linhas do mesmo sentido (entrada/saída).
-                aplicarLote((l) => (!cat || (cat.tipo === "entrada") === l.t.valor >= 0 ? { categoria_id: loteCategoria, acao: "novo" } : {}));
+                aplicarLote((l) =>
+                  !cat || (cat.tipo === "entrada") === l.t.valor >= 0 ? { categoria_id: loteCategoria, acao: "novo" } : {},
+                );
               }}
             >
               Aplicar categoria
@@ -225,116 +249,145 @@ export function Previa({
       </div>
 
       <ul className="mb-4 flex flex-col gap-2">
-        {visiveis.map((l) => {
+        {visiveis.map((l, i) => {
           const fora = !incluida(l);
           const cands = candidatasPorHash.get(l.hash) ?? [];
+          const novoDia = caixa && (i === 0 || visiveis[i - 1].t.data !== l.t.data);
           return (
-            <li
-              key={l.hash}
-              className={clsx(
-                "rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900",
-                fora && "opacity-50",
-                selecionadas.has(l.hash) && "border-emerald-400",
+            <Fragment key={l.hash}>
+              {novoDia && (
+                <li className="mt-2 px-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">{formatarData(l.t.data)}</li>
               )}
-            >
-              <div className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  aria-label={`Selecionar ${l.t.descricao}`}
-                  className="mt-1 size-5 accent-emerald-600"
-                  disabled={fora}
-                  checked={selecionadas.has(l.hash)}
-                  onChange={() =>
-                    setSelecionadas((s) => {
-                      const n = new Set(s);
-                      if (n.has(l.hash)) n.delete(l.hash);
-                      else n.add(l.hash);
-                      return n;
-                    })
-                  }
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm leading-tight font-medium break-words">{l.t.descricao}</p>
-                    <Dinheiro valor={l.t.valor} sinal className="shrink-0 text-sm font-semibold" />
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    {formatarData(l.t.data)}
-                    {l.t.hora && ` ${l.t.hora}`}
-                    {l.jaImportada && (
-                      <>
-                        {" "}
-                        <Selo cor="azul">já importada</Selo>
-                      </>
-                    )}
-                    {!l.jaImportada && l.motivo && ` · sugestão: ${l.motivo}`}
-                  </p>
-                  {!fora && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <select
-                        aria-label="Ação"
-                        value={l.acao}
-                        onChange={(e) => {
-                          const acao = e.target.value as Acao;
-                          alterar(l.hash, { acao, vinculo_id: acao === "vincular" && !l.vinculo_id ? (cands[0]?.id ?? "") : l.vinculo_id });
-                        }}
-                        className={estiloSelect}
-                      >
-                        {(Object.keys(ROTULO_ACAO) as Acao[])
-                          .filter((a) => a !== "racha" || casa.racha_ativo)
-                          .map((a) => (
-                            <option key={a} value={a}>
-                              {ROTULO_ACAO[a]}
-                            </option>
-                          ))}
-                      </select>
-                      {l.acao === "novo" && (
+              <li
+                className={clsx(
+                  "rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900",
+                  fora && "opacity-50",
+                  selecionadas.has(l.hash) && "border-emerald-400",
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    aria-label={`Selecionar ${l.t.descricao}`}
+                    className="mt-1 size-5 accent-emerald-600"
+                    disabled={fora}
+                    checked={selecionadas.has(l.hash)}
+                    onChange={() =>
+                      setSelecionadas((s) => {
+                        const n = new Set(s);
+                        if (n.has(l.hash)) n.delete(l.hash);
+                        else n.add(l.hash);
+                        return n;
+                      })
+                    }
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm leading-tight font-medium break-words">{l.t.descricao}</p>
+                      <Dinheiro valor={l.t.valor} sinal className="shrink-0 text-sm font-semibold" />
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {!caixa && formatarData(l.t.data)}
+                      {detalhe && detalhe(l)}
+                      {l.t.hora && ` ${l.t.hora}`}
+                      {l.jaImportada && (
                         <>
-                          <select aria-label="Categoria" value={l.categoria_id} onChange={(e) => alterar(l.hash, { categoria_id: e.target.value })} className={estiloSelect}>
-                            <option value="">Sem categoria</option>
-                            {categoriasDe(l.t.valor).map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.nome}
-                              </option>
-                            ))}
-                          </select>
-                          <select aria-label="Dono" value={l.dono} onChange={(e) => alterar(l.hash, { dono: e.target.value })} className={estiloSelect}>
-                            {membros.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.nome}
-                              </option>
-                            ))}
-                            <option value="">Casal</option>
-                          </select>
+                          {" "}
+                          <Selo cor="azul">já importada</Selo>
                         </>
                       )}
-                      {l.acao === "vincular" &&
-                        (cands.length ? (
-                          <select aria-label="Lançamento previsto" value={l.vinculo_id} onChange={(e) => alterar(l.hash, { vinculo_id: e.target.value })} className={clsx(estiloSelect, "max-w-full")}>
-                            <option value="">Escolha...</option>
-                            {cands.map((o) => (
-                              <option key={o.id} value={o.id}>
-                                {o.descricao} · {formatarDiaMes(o.vencimento)} · {formatarReais(o.valor_previsto)}
+                      {!l.jaImportada && l.motivo && ` · sugestão: ${l.motivo}`}
+                    </p>
+                    {!fora && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <select
+                          aria-label="Ação"
+                          value={l.acao}
+                          onChange={(e) => {
+                            const acao = e.target.value as Acao;
+                            alterar(l.hash, {
+                              acao,
+                              vinculo_id: acao === "vincular" && !l.vinculo_id ? (cands[0]?.id ?? "") : l.vinculo_id,
+                            });
+                          }}
+                          className={estiloSelect}
+                        >
+                          {(Object.keys(ROTULO_ACAO) as Acao[])
+                            .filter((a) => a !== "racha" || casa.racha_ativo)
+                            .map((a) => (
+                              <option key={a} value={a}>
+                                {ROTULO_ACAO[a]}
+                              </option>
+                            ))}
+                        </select>
+                        {l.acao === "novo" && (
+                          <>
+                            <select
+                              aria-label="Categoria"
+                              value={l.categoria_id}
+                              onChange={(e) => alterar(l.hash, { categoria_id: e.target.value })}
+                              className={estiloSelect}
+                            >
+                              <option value="">Sem categoria</option>
+                              {categoriasDe(l.t.valor).map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.nome}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              aria-label="Dono"
+                              value={l.dono}
+                              onChange={(e) => alterar(l.hash, { dono: e.target.value })}
+                              className={estiloSelect}
+                            >
+                              {membros.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.nome}
+                                </option>
+                              ))}
+                              <option value="">Casal</option>
+                            </select>
+                          </>
+                        )}
+                        {l.acao === "vincular" &&
+                          (cands.length ? (
+                            <select
+                              aria-label="Lançamento previsto"
+                              value={l.vinculo_id}
+                              onChange={(e) => alterar(l.hash, { vinculo_id: e.target.value })}
+                              className={clsx(estiloSelect, "max-w-full")}
+                            >
+                              <option value="">Escolha...</option>
+                              {cands.map((o) => (
+                                <option key={o.id} value={o.id}>
+                                  {o.descricao} · {formatarDiaMes(o.vencimento)} · {formatarReais(o.valor_previsto)}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="self-center text-xs text-red-600">Nenhum previsto com valor e data próximos.</span>
+                          ))}
+                        {l.acao === "racha" && (
+                          <select
+                            aria-label="Tipo no racha"
+                            value={l.racha_tipo}
+                            onChange={(e) => alterar(l.hash, { racha_tipo: e.target.value as RachaTipo })}
+                            className={estiloSelect}
+                          >
+                            {(Object.keys(ROTULO_RACHA) as RachaTipo[]).map((t) => (
+                              <option key={t} value={t}>
+                                {ROTULO_RACHA[t]}
                               </option>
                             ))}
                           </select>
-                        ) : (
-                          <span className="self-center text-xs text-red-600">Nenhum previsto com valor e data próximos.</span>
-                        ))}
-                      {l.acao === "racha" && (
-                        <select aria-label="Tipo no racha" value={l.racha_tipo} onChange={(e) => alterar(l.hash, { racha_tipo: e.target.value as RachaTipo })} className={estiloSelect}>
-                          {(Object.keys(ROTULO_RACHA) as RachaTipo[]).map((t) => (
-                            <option key={t} value={t}>
-                              {ROTULO_RACHA[t]}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </li>
+              </li>
+            </Fragment>
           );
         })}
         {visiveis.length === 0 && <li className="py-6 text-center text-sm text-slate-500">Nenhuma linha com esses filtros.</li>}
@@ -342,12 +395,14 @@ export function Previa({
 
       <div className="fab sticky z-20 flex flex-col gap-2 rounded-2xl bg-slate-50/95 py-2 backdrop-blur dark:bg-slate-950/95">
         <Erro mensagem={erro} />
-        <Botao onClick={confirmar} carregando={salvando} disabled={!aImportar.length}>
-          Confirmar importação de {aImportar.length} linhas
+        <Botao onClick={confirmar} carregando={salvando} disabled={!aEnviar.length}>
+          {caixa ? `Confirmar sugestões selecionadas (${aEnviar.length})` : `Confirmar importação de ${aImportar.length} linhas`}
         </Botao>
-        <Botao variante="fantasma" onClick={aoCancelar}>
-          Cancelar
-        </Botao>
+        {aoCancelar && (
+          <Botao variante="fantasma" onClick={aoCancelar}>
+            Cancelar
+          </Botao>
+        )}
       </div>
     </>
   );

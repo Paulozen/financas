@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gastosPorCategoria, projecao, sobraDoMes, vencimentos } from "./painel";
+import { gastosPorCategoria, projecao, saldoEmConta, sobraDoMes, vencimentos } from "./painel";
 import type { Ocorrencia } from "./tipos";
 
 let seq = 0;
@@ -98,5 +98,29 @@ describe("vencimentos e categorias", () => {
       { categoria_id: "a", total: 350 },
       { categoria_id: "b", total: 300 },
     ]);
+  });
+});
+
+describe("saldo em conta", () => {
+  const conta = (dono: string | null, saldo: number, p: Partial<{ tipo: string; ativa: boolean }> = {}) => ({
+    tipo: "BANK",
+    ativa: true,
+    saldo,
+    saldo_em: "2026-10-30T12:00:00.000Z",
+    dono_membro_id: dono,
+    ...p,
+  });
+  const manual = { valor: 99, data: "2026-10-01" };
+
+  it("sem conta conectada usa o informado à mão", () => {
+    expect(saldoEmConta([], "casal", manual)).toEqual({ ...manual, automatico: false });
+    expect(saldoEmConta([conta("a", 100, { tipo: "CREDIT" })], "casal", null)).toBeNull();
+  });
+
+  it("com contas conectadas soma por dono conforme a visão (cartão e inativas fora)", () => {
+    const contas = [conta("a", 100000), conta("b", 50000), conta("a", 2500), conta("a", 999999, { tipo: "CREDIT" }), conta("b", 7, { ativa: false })];
+    expect(saldoEmConta(contas, "casal", manual)).toEqual({ valor: 152500, data: "2026-10-30", automatico: true });
+    expect(saldoEmConta(contas, "a", manual)?.valor).toBe(102500);
+    expect(saldoEmConta(contas, "b", manual)?.valor).toBe(50000);
   });
 });

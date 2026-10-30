@@ -8,7 +8,8 @@ import { buscarTodos, checar } from "./db";
 import type { TransacaoExtrato } from "./importacao/extrato";
 import { padraoDe, sugerir, type RegraAprendida } from "./importacao/sugestao";
 import { supabase } from "./supabase";
-import type { Casa, Membro, Ocorrencia, RachaTipo } from "./tipos";
+import { categoriaDaPluggy } from "./pluggy/categorias";
+import type { Casa, Categoria, Membro, Ocorrencia, RachaTipo } from "./tipos";
 
 export interface TransacaoExterna {
   id: string;
@@ -48,7 +49,7 @@ export interface LinhaCaixa extends LinhaPrevia {
 export const hashPluggy = (pluggyId: string) => `pluggy:${pluggyId}`;
 
 /** Monta as linhas da caixa de entrada com as sugestões já preenchidas. */
-export async function carregarCaixa(casa: Casa): Promise<{ linhas: LinhaCaixa[]; pendentes: Ocorrencia[] }> {
+export async function carregarCaixa(casa: Casa, categorias: Categoria[]): Promise<{ linhas: LinhaCaixa[]; pendentes: Ocorrencia[] }> {
   const [externas, contas, regras] = await Promise.all([
     buscarTodos<TransacaoExterna>("transacoes_externas", casa.id, (q) => q.eq("situacao", "pendente"), "data"),
     buscarTodos<ContaExterna>("contas_externas", casa.id),
@@ -60,7 +61,10 @@ export async function carregarCaixa(casa: Casa): Promise<{ linhas: LinhaCaixa[];
 
   const datas = lista.map((t) => t.data).sort();
   const pendentes = await buscarTodos<Ocorrencia>("ocorrencias", casa.id, (q) =>
-    q.eq("status", "pendente").gte("vencimento", somarDias(datas[0], -10)).lte("vencimento", somarDias(datas.at(-1)!, 10)),
+    q
+      .eq("status", "pendente")
+      .gte("vencimento", somarDias(datas[0], -10))
+      .lte("vencimento", somarDias(datas.at(-1)!, 10)),
   );
 
   const usados = new Set<string>();
@@ -80,13 +84,17 @@ export async function carregarCaixa(casa: Casa): Promise<{ linhas: LinhaCaixa[];
         : null;
     const s = sugerir(t, { regras, pendentes: pendentes.filter((p) => !usados.has(p.id)), racha });
     if (s.vinculo_id) usados.add(s.vinculo_id);
+    // Sem regra aprendida: usa a categoria que a Pluggy deu à transação.
+    const categoria =
+      s.categoria_id ??
+      (s.acao === "novo" ? categoriaDaPluggy(externa.categoria_pluggy, t.valor >= 0 ? "entrada" : "saida", categorias) : null);
     const donoPadrao = conta?.dono_membro_id ?? "";
     return {
       t,
       hash: hashPluggy(externa.pluggy_id),
       jaImportada: false,
       acao: s.acao,
-      categoria_id: s.categoria_id ?? "",
+      categoria_id: categoria ?? "",
       dono: s.dono_membro_id === undefined ? donoPadrao : (s.dono_membro_id ?? ""),
       racha_tipo: s.racha_tipo ?? ((t.valor < 0 ? "juiz" : "mensalidade") as RachaTipo),
       vinculo_id: s.vinculo_id ?? "",
@@ -123,8 +131,8 @@ export async function confirmarCaixa(casa: Casa, membro: Membro, linhas: Record<
 }
 
 /** Confirma sozinhas as transações que batem com uma regra aprendida. Devolve quantas. */
-export async function aplicarRegrasAutomaticas(casa: Casa, membro: Membro): Promise<number> {
-  const { linhas } = await carregarCaixa(casa);
+export async function aplicarRegrasAutomaticas(casa: Casa, membro: Membro, categorias: Categoria[]): Promise<number> {
+  const { linhas } = await carregarCaixa(casa, categorias);
   const porRegra = linhas.filter((l) => l.motivo === "regra aprendida" && (l.acao !== "vincular" || l.vinculo_id));
   if (!porRegra.length) return 0;
   await confirmarCaixa(casa, membro, porRegra.map(paraConfirmacao), true);

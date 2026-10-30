@@ -1,12 +1,13 @@
 "use client";
 
-import { ChevronRight, FileUp, LogOut, PiggyBank, Settings, Tags, Trophy } from "lucide-react";
+import { ChevronRight, FileUp, Inbox, LogOut, PiggyBank, Settings, Tags, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/components/app-contexto";
 import { Cabecalho } from "@/components/cabecalho";
 import { supabase } from "@/lib/supabase";
 
 const links = [
+  { href: "/caixa", rotulo: "Caixa de entrada", Icone: Inbox },
   { href: "/reservas", rotulo: "Reservas", Icone: PiggyBank },
   { href: "/racha", rotulo: "Caixa do racha", Icone: Trophy },
   { href: "/importar", rotulo: "Importar extrato", Icone: FileUp },

@@ -2,7 +2,8 @@
 
 import { Copy } from "lucide-react";
 import { useState } from "react";
-import { useApp } from "@/components/app-contexto";
+import { useApp, useCarregar } from "@/components/app-contexto";
+import { buscarTodos } from "@/lib/db";
 import { BancosConectados } from "@/components/bancos-conectados";
 import { Cabecalho } from "@/components/cabecalho";
 import { Botao, Campo, CampoValor, Cartao, Erro, formatarErro, Interruptor, Selecao, Titulo } from "@/components/ui";
@@ -26,6 +27,10 @@ export default function Configuracoes() {
   const [ok, setOk] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const { dados: contas } = useCarregar("contas-bancarias", () =>
+    buscarTodos<{ tipo: string; ativa: boolean }>("contas_externas", casa.id, (q) => q.eq("tipo", "BANK").eq("ativa", true)),
+  );
+  const contasConectadas = contas?.length ?? 0;
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -98,6 +103,12 @@ export default function Configuracoes() {
         <Cartao>
           <Titulo>Saldo em conta</Titulo>
           <div className="flex flex-col gap-4">
+            {contasConectadas > 0 && (
+              <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                Com {contasConectadas} {contasConectadas === 1 ? "conta corrente conectada" : "contas correntes conectadas"}, o saldo usado
+                na projeção vem automaticamente dos bancos (soma por dono). O valor abaixo só vale se não houver conta conectada.
+              </p>
+            )}
             <Interruptor
               rotulo="Informar saldo em conta hoje (mostra o saldo acumulado na projeção)"
               marcado={temSaldo}

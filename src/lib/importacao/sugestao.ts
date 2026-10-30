@@ -25,7 +25,21 @@ export interface Sugestao {
 }
 
 /** Movimentos entre a conta e o cofrinho / rendimentos: sugerir "Ignorar". */
-const INTERNOS = /(troco guardado|dinheiro guardado|dinheiro resgatado|rendimento|cofrinho|aplicacao|resgate)/;
+// Inclui as categorias da Pluggy para transferência entre contas próprias, rendimentos e investimentos.
+const INTERNOS =
+  /(troco guardado|dinheiro guardado|dinheiro resgatado|rendimento|cofrinho|aplicacao|resgate|same person transfer|proceeds interests|transfer - internal|investments)/;
+
+/** Pagamento de fatura de cartão (descrição do extrato ou categoria da Pluggy). */
+const PAGAMENTO_FATURA = /(credit card payment|pagamento de fatura|pagto fatura|pgto fatura|fatura do cartao|fatura .*card|pagamento cartao)/;
+
+/** Fatura pendente para vincular a um pagamento: vencimento até 10 dias de distância, valor mais próximo. */
+export function faturaParaPagamento(t: TransacaoExtrato, pendentes: Ocorrencia[]): Ocorrencia | undefined {
+  if (t.valor >= 0 || !PAGAMENTO_FATURA.test(semAcentos(`${t.tipo} ${t.descricao}`))) return undefined;
+  const valor = Math.abs(t.valor);
+  return pendentes
+    .filter((o) => o.status === "pendente" && o.origem_tipo === "fatura" && Math.abs(difDias(o.vencimento, t.data)) <= 10)
+    .sort((a, b) => Math.abs(a.valor_previsto - valor) - Math.abs(b.valor_previsto - valor))[0];
+}
 
 export function ehMovimentoInterno(t: Pick<TransacaoExtrato, "tipo" | "descricao">): boolean {
   return INTERNOS.test(semAcentos(`${t.tipo} ${t.descricao}`));
@@ -77,6 +91,8 @@ export function sugerir(t: TransacaoExtrato, ctx: ContextoSugestao): Sugestao {
     };
   }
   if (ehMovimentoInterno(t)) return { ...vazio, acao: "ignorar", motivo: "movimento interno (cofrinho/rendimento)" };
+  const fatura = faturaParaPagamento(t, ctx.pendentes);
+  if (fatura) return { ...vazio, acao: "vincular", vinculo_id: fatura.id, categoria_id: fatura.categoria_id, motivo: "pagamento de fatura" };
   const [melhor] = candidatas(t, ctx.pendentes);
   if (melhor) return { ...vazio, acao: "vincular", vinculo_id: melhor.id, categoria_id: melhor.categoria_id, motivo: "parece um lançamento previsto" };
   if (ctx.racha && t.valor > 0) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronRight, Inbox } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -13,7 +13,8 @@ import { hojeISO, nomeMesCurto } from "@/lib/datas";
 import { buscarTodos } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
 import { reaisCurto, useCoresGrafico } from "@/lib/graficos";
-import { gastosPorCategoria, projecao, sobraDoMes, vencimentos, type MesProjecao } from "@/lib/painel";
+import { gastosPorCategoria, projecao, saldoEmConta, sobraDoMes, vencimentos, type MesProjecao } from "@/lib/painel";
+import type { ContaExterna } from "@/lib/caixa-entrada";
 import { resumoProjeto } from "@/lib/projetos";
 import { saldoRacha } from "@/lib/racha";
 import { totalGuardado } from "@/lib/reservas";
@@ -26,7 +27,7 @@ export default function Painel() {
   const hoje = hojeISO();
 
   const { dados, erro, carregando } = useCarregar("painel", async () => {
-    const [ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha] = await Promise.all([
+    const [ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha, contasExternas, aRevisar] = await Promise.all([
       buscarTodos<Ocorrencia>("ocorrencias", casa.id, undefined, "vencimento"),
       buscarTodos<Contrato>("contratos", casa.id),
       buscarTodos<Divida>("dividas", casa.id),
@@ -35,8 +36,13 @@ export default function Painel() {
       buscarTodos<Reserva>("reservas", casa.id),
       buscarTodos<ReservaSaldo>("reserva_saldos", casa.id),
       casa.racha_ativo ? buscarTodos<RachaMovimento>("racha_movimentos", casa.id) : Promise.resolve([]),
+      buscarTodos<ContaExterna>("contas_externas", casa.id),
+      buscarTodos<{ conta_externa_id: string }>("transacoes_externas", casa.id, (q) => q.eq("situacao", "pendente"), "data"),
     ]);
-    return { ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha };
+    // Caixa de entrada: só contas correntes ativas.
+    const bancosAtivos = new Set(contasExternas.filter((c) => c.ativa && c.tipo === "BANK").map((c) => c.id));
+    const pendentesCaixa = aRevisar.filter((t) => bancosAtivos.has(t.conta_externa_id)).length;
+    return { ocorrencias, contratos, dividas, projetos, itens, reservas, saldos, racha, contasExternas, pendentesCaixa };
   });
 
   if (carregando && !dados)
@@ -57,11 +63,12 @@ export default function Painel() {
   const ocorrencias = daVisao(dados.ocorrencias, visao);
   const semNada = dados.ocorrencias.length === 0;
   const sobra = sobraDoMes(ocorrencias, mes);
-  const proj = projecao(
-    ocorrencias,
-    hoje,
+  const saldoHoje = saldoEmConta(
+    dados.contasExternas,
+    visao,
     casa.saldo_conta !== null && casa.saldo_conta_data ? { valor: casa.saldo_conta, data: casa.saldo_conta_data } : null,
   );
+  const proj = projecao(ocorrencias, hoje, saldoHoje);
   const venc = vencimentos(ocorrencias, hoje);
   const gastos = gastosPorCategoria(ocorrencias, mes);
   const maiorGasto = gastos[0]?.total ?? 0;
@@ -113,6 +120,19 @@ export default function Painel() {
     <>
       <Cabecalho titulo="Painel" />
       <SeletorMes />
+      {dados.pendentesCaixa > 0 && (
+        <Link
+          href="/caixa"
+          className="mb-4 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm hover:border-emerald-400 dark:border-emerald-900 dark:bg-emerald-950/40"
+        >
+          <Inbox className="size-5 text-emerald-600" aria-hidden />
+          <span className="flex-1">
+            <strong>{dados.pendentesCaixa}</strong> {dados.pendentesCaixa === 1 ? "transação" : "transações"} dos bancos para revisar na
+            caixa de entrada
+          </span>
+          <ChevronRight className="size-4 text-slate-400" aria-hidden />
+        </Link>
+      )}
       <Erro mensagem={erro} />
 
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
@@ -177,7 +197,12 @@ export default function Painel() {
               <AlertTriangle className="size-3.5" aria-hidden /> Meses em vermelho fecham no negativo.
             </p>
           )}
-          {casa.saldo_conta === null && (
+          {saldoHoje?.automatico && (
+            <p className="mt-1 text-xs text-slate-500">
+              Saldo acumulado a partir do saldo das contas conectadas ({formatarReais(saldoHoje.valor)}).
+            </p>
+          )}
+          {!saldoHoje && (
             <p className="mt-1 text-xs text-slate-500">
               Dica: informe o saldo em conta em{" "}
               <Link href="/configuracoes" className="underline">

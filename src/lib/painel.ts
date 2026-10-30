@@ -96,3 +96,32 @@ export function gastosPorCategoria(ocorrencias: Ocorrencia[], mes: string): { ca
     .filter((g) => g.total > 0)
     .sort((a, b) => b.total - a.total);
 }
+
+export interface ContaComSaldo {
+  tipo: string;
+  ativa: boolean;
+  saldo: number | null;
+  saldo_em: string | null;
+  dono_membro_id: string | null;
+}
+
+/**
+ * "Saldo em conta hoje" usado na projeção. Com contas correntes conectadas, é a
+ * soma dos saldos delas (por dono, conforme a visão; na visão Casal, todas).
+ * Sem contas conectadas, vale o saldo informado à mão nas Configurações.
+ */
+export function saldoEmConta(
+  contas: ContaComSaldo[],
+  visao: string,
+  manual: { valor: number; data: string } | null,
+): { valor: number; data: string; automatico: boolean } | null {
+  const bancos = contas.filter((c) => c.tipo === "BANK" && c.ativa && c.saldo !== null && c.saldo_em);
+  if (!bancos.length) return manual ? { ...manual, automatico: false } : null;
+  const daVisao = visao === "casal" ? bancos : bancos.filter((c) => c.dono_membro_id === visao);
+  const datas = bancos.map((c) => c.saldo_em!).sort();
+  return {
+    valor: daVisao.reduce((s, c) => s + (c.saldo ?? 0), 0),
+    data: datas[0].slice(0, 10),
+    automatico: true,
+  };
+}

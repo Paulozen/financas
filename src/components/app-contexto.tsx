@@ -1,15 +1,7 @@
 "use client";
 
 import type { User } from "@supabase/supabase-js";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useEffectEvent,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useEffectEvent, useState, type ReactNode } from "react";
 import { mesDe, hojeISO } from "@/lib/datas";
 import { checar } from "@/lib/db";
 import { garantirOcorrencias } from "@/lib/sincronizar";
@@ -120,7 +112,9 @@ export function AppProvider({ inicial, children }: { inicial: DadosBase; childre
     setBancos((b) => ({ ...b, sincronizando: true, erro: undefined }));
     try {
       const resumo = await sincronizarBancos();
-      const automaticas = base.casa.aplicar_regras_auto ? await aplicarRegrasAutomaticas(base.casa, base.membro).catch(() => 0) : 0;
+      const automaticas = base.casa.aplicar_regras_auto
+        ? await aplicarRegrasAutomaticas(base.casa, base.membro, base.categorias).catch(() => 0)
+        : 0;
       await garantirOcorrencias(base.casa.id, hojeISO()).catch(() => {});
       setVersao((v) => v + 1);
       setBancos({ sincronizando: false, resumo, automaticas });
@@ -129,7 +123,7 @@ export function AppProvider({ inicial, children }: { inicial: DadosBase; childre
       setBancos((b) => ({ ...b, sincronizando: false, erro: formatarErro(e) }));
       throw e;
     }
-  }, [base.casa, base.membro]);
+  }, [base.casa, base.membro, base.categorias]);
 
   // Ao abrir o app: sincroniza os bancos em segundo plano se passou de 6 horas.
   const sincronizarSePreciso = useEffectEvent((precisa: boolean) => {

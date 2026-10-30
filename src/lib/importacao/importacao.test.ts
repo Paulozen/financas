@@ -15,6 +15,7 @@ import {
 import { lerOFX } from "./ofx";
 import { candidatas, ehMovimentoInterno, sugerir } from "./sugestao";
 import { decodificar, normalizarDescricao } from "./texto";
+import { categoriaDaPluggy } from "../pluggy/categorias";
 
 const MENOS = "−";
 
@@ -169,5 +170,49 @@ describe("sugestões", () => {
       racha_tipo: "diaria",
     });
     expect(sugerir(t({}), { regras: [], pendentes: [] }).acao).toBe("novo");
+  });
+});
+
+describe("sugestões com dados do Open Finance", () => {
+  const t = (p: Partial<{ tipo: string; descricao: string; valor: number; data: string }>) => ({
+    indice: 0,
+    hora: "",
+    tipo: "",
+    descricao: "Transferência",
+    valor: -10000,
+    data: "2026-11-05",
+    ...p,
+  });
+
+  it("categorias da Pluggy de contas próprias, rendimentos e investimentos viram Ignorar", () => {
+    for (const tipo of ["Same person transfer", "Same person transfer - CASH", "Proceeds interests and dividends", "Investments", "Transfer - Internal"])
+      expect(sugerir(t({ tipo }), { regras: [], pendentes: [] }).acao).toBe("ignorar");
+    expect(sugerir(t({ tipo: "Transfer - PIX" }), { regras: [], pendentes: [] }).acao).toBe("novo");
+  });
+
+  it("pagamento de fatura vincula à fatura pendente mais próxima em valor (até 10 dias)", () => {
+    const fat = (id: string, venc: string, valor: number) =>
+      ({ id, status: "pendente", origem_tipo: "fatura", tipo: "saida", valor_previsto: valor, vencimento: venc, categoria_id: "cartao" }) as Ocorrencia;
+    const pendentes = [fat("longe", "2026-11-30", 250000), fat("a", "2026-11-10", 180000), fat("b", "2026-11-10", 240000)];
+    const s = sugerir(t({ tipo: "Credit card payment", descricao: "PAGAMENTO FATURA", valor: -245000 }), { regras: [], pendentes });
+    expect(s).toMatchObject({ acao: "vincular", vinculo_id: "b", motivo: "pagamento de fatura" });
+  });
+});
+
+describe("categoria da Pluggy -> categoria do app", () => {
+  const cats = [
+    { id: "m", nome: "Mercado", tipo: "saida", ativa: true },
+    { id: "t", nome: "Transporte", tipo: "saida", ativa: true },
+    { id: "o", nome: "Outros", tipo: "saida", ativa: true },
+    { id: "s", nome: "Salário", tipo: "entrada", ativa: true },
+  ];
+  it("mapeia e respeita entrada/saída e categorias existentes", () => {
+    expect(categoriaDaPluggy("Groceries", "saida", cats)).toBe("m");
+    expect(categoriaDaPluggy("Taxi and ride-hailing", "saida", cats)).toBe("t");
+    // "Compras" não existe nesta casa: cai em "Outros"
+    expect(categoriaDaPluggy("Shopping", "saida", cats)).toBe("o");
+    expect(categoriaDaPluggy("Salary", "entrada", cats)).toBe("s");
+    expect(categoriaDaPluggy("Groceries", "entrada", cats)).toBeNull();
+    expect(categoriaDaPluggy(null, "saida", cats)).toBeNull();
   });
 });
