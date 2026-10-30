@@ -49,3 +49,10 @@ Decisões tomadas durante a construção, na ordem em que surgiram.
 
 - **Parcelas de projeto** são ocorrências `parcela_projeto` com `origem_id` = item (sem tabela própria), categoria "Casamento" e dono do projeto. Criadas pelo ajudante "N parcelas iguais" (a última absorve o arredondamento) ou uma a uma; editáveis no detalhe enquanto pendentes.
 - **Resumo do projeto:** orçamento (informado), orçado (soma dos itens), contratado, pago (valores reais das parcelas pagas), falta pagar = contratado − pago.
+
+## Fase 5
+
+- **Reservas:** cada atualização de saldo é um registro (data, valor) em `reserva_saldos`; o saldo atual é o mais recente. Gráfico de linha do total e de cada reserva (até 7 linhas; acima disso só o total). Reservas desativadas saem do total guardado.
+- **Gráficos:** paleta categórica fixa e validada para daltonismo, com passos próprios no modo escuro (`src/lib/graficos.ts`); positivo azul / negativo vermelho na projeção.
+- **Racha:** movimentos em tabela própria, totalmente fora de `ocorrencias` (não entra em sobra, projeção nem gráficos). Quantidade × valor padrão vira um único movimento com a descrição "8 × R$ 5,00". Configuração (ativar, organizador, valores padrão) em Configurações.
+- **Configurações** também guarda o "Saldo em conta hoje" (valor + data) e mostra o código de convite.
