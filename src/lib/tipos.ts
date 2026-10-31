@@ -158,6 +158,9 @@ export interface Reserva {
   dono_membro_id: string | null;
   observacao: string | null;
   ativa: boolean;
+  /** grupo automático de investimentos do Open Finance */
+  automatica?: boolean;
+  grupo_chave?: string | null;
 }
 
 export interface ReservaSaldo {

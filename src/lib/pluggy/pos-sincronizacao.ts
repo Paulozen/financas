@@ -2,12 +2,13 @@
 // 1. faturas do banco -> ocorrências de fatura do cartão vinculado (valor e vencimento);
 // 2. faturas futuras -> previsão (parcelas conhecidas + média à vista);
 // 3. compras do cartão sem categoria -> categoria sugerida (regra aprendida ou Pluggy);
-// 4. reservas vinculadas a investimentos -> saldo do dia no histórico.
+// 4. investimentos -> reservas automáticas (dono + banco + tipo) e saldo do dia no histórico.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mesDe } from "../datas";
 import { padraoDe } from "../importacao/sugestao";
 import { previsaoFaturas, type CompraCartao } from "./cartao";
 import { categoriaDaPluggy } from "./categorias";
+import { chaveGrupo, contaNoTotal, nomeGrupo, saldoPorReserva, type InvestimentoGrupo } from "./grupos";
 
 function checar<T>(r: { data: T; error: { message: string } | null }): T {
   if (r.error) throw new Error(r.error.message);
@@ -114,14 +115,61 @@ async function categorizarComprasDeCartao(sb: SupabaseClient, casaId: string) {
   }
 }
 
+/**
+ * Reservas automáticas: cada aplicação ativa sem grupo entra no grupo do seu
+ * dono + banco + tipo (o grupo é criado se faltar) e o saldo de cada reserva
+ * com aplicações é gravado no histórico do dia (um registro por dia).
+ */
 async function atualizarReservas(sb: SupabaseClient, casaId: string, hoje: string) {
-  const vinculados = checar(
-    await sb.from("investimentos_externos").select("reserva_id, saldo").eq("casa_id", casaId).not("reserva_id", "is", null),
-  ) as { reserva_id: string; saldo: number }[];
-  // Uma reserva pode ter vários investimentos vinculados: soma.
-  const porReserva = new Map<string, number>();
-  for (const v of vinculados) porReserva.set(v.reserva_id, (porReserva.get(v.reserva_id) ?? 0) + Number(v.saldo));
-  for (const [reservaId, saldo] of porReserva) {
+  const [investimentos, itens, membros, automaticas] = await Promise.all([
+    sb.from("investimentos_externos").select("id, pluggy_item_id, tipo, subtipo, saldo, status, vencimento, reserva_id").eq("casa_id", casaId).then(checar),
+    sb.from("pluggy_itens").select("pluggy_item_id, banco, dono_membro_id").eq("casa_id", casaId).then(checar),
+    sb.from("membros").select("id, nome").eq("casa_id", casaId).then(checar),
+    sb.from("reservas").select("id, grupo_chave").eq("casa_id", casaId).not("grupo_chave", "is", null).then(checar),
+  ]);
+  const lista = (investimentos as InvestimentoGrupo[]).map((i) => ({ ...i, saldo: Number(i.saldo) }));
+  const porChave = new Map((automaticas as { id: string; grupo_chave: string }[]).map((r) => [r.grupo_chave, r.id]));
+  const itemDe = new Map((itens as { pluggy_item_id: string; banco: string | null; dono_membro_id: string | null }[]).map((i) => [i.pluggy_item_id, i]));
+  const nomeMembro = new Map((membros as { id: string; nome: string }[]).map((m) => [m.id, m.nome]));
+
+  // 1. Aplicações novas (ou soltas) entram no grupo certo.
+  const vincular = new Map<string, string[]>();
+  for (const inv of lista) {
+    if (inv.reserva_id || !contaNoTotal(inv, hoje)) continue;
+    const chave = chaveGrupo(inv);
+    let reservaId = porChave.get(chave);
+    if (!reservaId) {
+      const item = itemDe.get(inv.pluggy_item_id);
+      const dono = item?.dono_membro_id ?? null;
+      const nova = checar(
+        await sb
+          .from("reservas")
+          .insert({
+            casa_id: casaId,
+            nome: nomeGrupo(inv.tipo, inv.subtipo, item?.banco ?? null, dono ? (nomeMembro.get(dono) ?? null) : null),
+            banco: item?.banco ?? null,
+            dono_membro_id: dono,
+            observacao: "Reserva automática: saldo atualizado a cada sincronização do Open Finance.",
+            automatica: true,
+            grupo_chave: chave,
+          })
+          .select("id")
+          .single(),
+      ) as { id: string };
+      reservaId = nova.id;
+      porChave.set(chave, reservaId);
+    }
+    vincular.set(reservaId, [...(vincular.get(reservaId) ?? []), inv.id]);
+    inv.reserva_id = reservaId;
+  }
+  for (const [reservaId, ids] of vincular) {
+    for (let i = 0; i < ids.length; i += 200) {
+      checar(await sb.from("investimentos_externos").update({ reserva_id: reservaId }).in("id", ids.slice(i, i + 200)));
+    }
+  }
+
+  // 2. Saldo do dia de cada reserva com aplicações (para o gráfico de evolução).
+  for (const [reservaId, saldo] of saldoPorReserva(lista, hoje)) {
     const [doDia] = checar(await sb.from("reserva_saldos").select("id, valor").eq("reserva_id", reservaId).eq("data", hoje)) as { id: string; valor: number }[];
     if (doDia) {
       if (Number(doDia.valor) !== saldo) checar(await sb.from("reserva_saldos").update({ valor: saldo }).eq("id", doDia.id));

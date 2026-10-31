@@ -18,7 +18,6 @@ import {
   formatarErro,
   Interruptor,
   Modal,
-  Selecao,
   Selo,
   Titulo,
   Vazio,
@@ -27,7 +26,9 @@ import { formatarData, formatarDiaMes, hojeISO } from "@/lib/datas";
 import { buscarTodos, checar } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
 import { reaisCurto, useCoresGrafico } from "@/lib/graficos";
+import { contaNoTotal } from "@/lib/pluggy/grupos";
 import { resumoGuardado, saldoAtual, serieReservas, type ContaGuardada } from "@/lib/reservas";
+import { assumirGrupo, moverAplicacao } from "@/lib/reservas-auto";
 import { supabase } from "@/lib/supabase";
 import type { Reserva, ReservaSaldo } from "@/lib/tipos";
 
@@ -36,7 +37,7 @@ export default function Reservas() {
   const [form, setForm] = useState<Reserva | "nova" | null>(null);
   const [atualizando, setAtualizando] = useState<Reserva | null>(null);
   const [historico, setHistorico] = useState<Reserva | null>(null);
-  const { dados, erro, carregando } = useCarregar("reservas", async () => {
+  const { dados, erro, carregando, recarregar } = useCarregar("reservas", async () => {
     const [reservas, saldos, investimentos, contas] = await Promise.all([
       buscarTodos<Reserva>("reservas", casa.id, undefined, "nome"),
       buscarTodos<ReservaSaldo>("reserva_saldos", casa.id, undefined, "data"),
@@ -49,6 +50,10 @@ export default function Reservas() {
   const saldos = dados?.saldos ?? [];
   const ativas = reservas.filter((r) => r.ativa);
   const guardado = resumoGuardado(dados?.reservas ?? [], saldos, dados?.contas ?? [], visao);
+  const hoje = hojeISO();
+  // Aplicações que contam no total, por reserva (as resgatadas e zeradas não aparecem).
+  const aplicacoesDe = (reservaId: string) =>
+    (dados?.investimentos ?? []).filter((i) => i.reserva_id === reservaId && contaNoTotal({ ...i, saldo: Number(i.saldo) }, hoje));
 
   return (
     <>
@@ -112,9 +117,9 @@ export default function Reservas() {
                           {!r.ativa && " · encerrada"}
                         </p>
                         {r.observacao && <p className="text-xs text-slate-500">{r.observacao}</p>}
-                        {dados?.investimentos.some((i) => i.reserva_id === r.id) && (
+                        {(r.automatica || aplicacoesDe(r.id).length > 0) && (
                           <p className="mt-1">
-                            <Selo cor="azul">saldo automático (Open Finance)</Selo>
+                            <Selo cor="azul">automática (Open Finance)</Selo>
                           </p>
                         )}
                       </button>
@@ -124,13 +129,27 @@ export default function Reservas() {
                       </div>
                     </div>
                     <div className="mt-3 flex gap-2">
-                      <Botao variante="secundario" className="!min-h-9 flex-1" onClick={() => setAtualizando(r)}>
-                        Atualizar saldo
+                      {!(r.automatica || aplicacoesDe(r.id).length > 0) && (
+                        <Botao variante="secundario" className="!min-h-9 flex-1" onClick={() => setAtualizando(r)}>
+                          Atualizar saldo
+                        </Botao>
+                      )}
+                      <Botao variante="fantasma" className="!min-h-9" onClick={() => setForm(r)}>
+                        Editar
                       </Botao>
                       <Botao variante="fantasma" className="!min-h-9" onClick={() => setHistorico(r)}>
                         Histórico
                       </Botao>
                     </div>
+                    {aplicacoesDe(r.id).length > 0 && (
+                      <Aplicacoes
+                        aplicacoes={aplicacoesDe(r.id)}
+                        reservas={dados?.reservas ?? []}
+                        todas={dados?.investimentos ?? []}
+                        reservaId={r.id}
+                        aoMover={recarregar}
+                      />
+                    )}
                   </Cartao>
                 );
               })}
@@ -141,7 +160,8 @@ export default function Reservas() {
       {form && (
         <FormReserva
           reserva={form === "nova" ? undefined : form}
-          investimentos={dados?.investimentos ?? []}
+          reservas={dados?.reservas ?? []}
+          saldos={saldos}
           aoFechar={() => setForm(null)}
         />
       )}
@@ -221,14 +241,27 @@ export interface Investimento {
   saldo: number;
   status: string | null;
   reserva_id: string | null;
+  pluggy_item_id: string;
 }
 
-function FormReserva({ reserva, investimentos, aoFechar }: { reserva?: Reserva; investimentos: Investimento[]; aoFechar: () => void }) {
-  const { casa, membros, atualizar } = useApp();
-  const vinculadoAntes = investimentos.find((i) => reserva && i.reserva_id === reserva.id)?.id ?? "";
-  const [investimento, setInvestimento] = useState(vinculadoAntes);
-  // Só investimentos ativos com saldo, que não estejam ligados a outra reserva.
-  const opcoes = investimentos.filter((i) => (i.status !== "TOTAL_WITHDRAWAL" && i.saldo > 0 && !i.reserva_id) || i.id === vinculadoAntes);
+function FormReserva({
+  reserva,
+  reservas,
+  saldos,
+  aoFechar,
+}: {
+  reserva?: Reserva;
+  reservas: Reserva[];
+  saldos: ReservaSaldo[];
+  aoFechar: () => void;
+}) {
+  const { casa, membros, nomeDono, atualizar } = useApp();
+  const automatica = !!reserva?.automatica;
+  // Grupos automáticos que esta reserva pode assumir, ordenados por dono e banco.
+  const grupos = reservas
+    .filter((r) => r.automatica && r.id !== reserva?.id)
+    .sort((a, b) => nomeDono(a.dono_membro_id).localeCompare(nomeDono(b.dono_membro_id)) || (a.banco ?? "").localeCompare(b.banco ?? ""));
+  const [grupo, setGrupo] = useState("");
   const [nome, setNome] = useState(reserva?.nome ?? "");
   const [banco, setBanco] = useState(reserva?.banco ?? "");
   const [dono, setDono] = useState(reserva?.dono_membro_id ?? "");
@@ -257,23 +290,15 @@ function FormReserva({ reserva, investimentos, aoFechar }: { reserva?: Reserva; 
       else {
         const nova = checar(await sb.from("reservas").insert(dados).select("id").single()) as { id: string };
         reservaId = nova.id;
-        if (saldoInicial > 0 && !investimento)
+        if (saldoInicial > 0 && !grupo)
           checar(await sb.from("reserva_saldos").insert({ casa_id: casa.id, reserva_id: nova.id, data: hojeISO(), valor: saldoInicial }));
       }
-      if (investimento !== vinculadoAntes) {
-        // Troca o vínculo: o saldo passa a vir do investimento a cada sincronização.
-        if (vinculadoAntes) checar(await sb.from("investimentos_externos").update({ reserva_id: null }).eq("id", vinculadoAntes));
-        if (investimento) {
-          checar(await sb.from("investimentos_externos").update({ reserva_id: reservaId }).eq("id", investimento));
-          const inv = investimentos.find((i) => i.id === investimento)!;
-          const hoje = hojeISO();
-          const [doDia] = checar(await sb.from("reserva_saldos").select("id").eq("reserva_id", reservaId!).eq("data", hoje)) as {
-            id: string;
-          }[];
-          if (doDia) checar(await sb.from("reserva_saldos").update({ valor: inv.saldo }).eq("id", doDia.id));
-          else checar(await sb.from("reserva_saldos").insert({ casa_id: casa.id, reserva_id: reservaId, data: hoje, valor: inv.saldo }));
-        }
-      }
+      // Assumir um grupo do banco: as aplicações e o histórico passam para esta reserva.
+      if (grupo)
+        await assumirGrupo(
+          reservaId!,
+          grupos.find((g) => g.id === grupo)!,
+        );
       await atualizar();
       aoFechar();
     } catch (e) {
@@ -300,23 +325,48 @@ function FormReserva({ reserva, investimentos, aoFechar }: { reserva?: Reserva; 
         <Campo rotulo="Banco" value={banco} onChange={(e) => setBanco(e.target.value)} />
         <SeletorDono valor={dono} aoMudar={setDono} membros={membros} />
         <AreaTexto rotulo="Observação" placeholder="Ex.: 110% do CDI, vence em 2028" value={obs} onChange={(e) => setObs(e.target.value)} />
-        {opcoes.length > 0 && (
-          <Selecao
-            rotulo="Investimento no banco (Open Finance)"
-            value={investimento}
-            onChange={(e) => setInvestimento(e.target.value)}
-            vazio="— sem vínculo (saldo manual) —"
-            opcoes={opcoes.map((i) => ({
-              valor: i.id,
-              rotulo: `${i.nome}${i.emissor ? ` · ${i.emissor}` : ""}${i.vencimento ? ` · vence ${formatarData(i.vencimento)}` : ""} · ${formatarReais(i.saldo)}`,
-            }))}
-          />
+        {!automatica && grupos.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="grupo-banco" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Usar um grupo do banco (Open Finance)
+            </label>
+            <select
+              id="grupo-banco"
+              value={grupo}
+              onChange={(e) => setGrupo(e.target.value)}
+              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base dark:border-slate-700 dark:bg-slate-900"
+            >
+              <option value="">— não usar (saldo manual) —</option>
+              {membros
+                .map((m) => m.id)
+                .concat([""])
+                .map((donoId) => {
+                  const doDono = grupos.filter((g) => (g.dono_membro_id ?? "") === donoId);
+                  if (!doDono.length) return null;
+                  return (
+                    <optgroup key={donoId || "casal"} label={nomeDono(donoId || null)}>
+                      {doDono.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.nome} · {formatarReais(saldoAtual(g.id, saldos)?.valor ?? 0)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+            </select>
+            <p className="text-xs text-slate-500">
+              As aplicações do grupo e o histórico de saldos passam para esta reserva, que passa a se atualizar sozinha.
+            </p>
+          </div>
         )}
-        {investimento && (
-          <p className="-mt-2 text-xs text-slate-500">O saldo desta reserva será atualizado automaticamente a cada sincronização.</p>
+        {automatica && (
+          <p className="rounded-xl bg-sky-50 p-3 text-xs text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">
+            Reserva automática: o saldo vem das aplicações do banco a cada sincronização. Você pode renomear, mudar o dono ou tirar do
+            total.
+          </p>
         )}
-        {!reserva && !investimento && <CampoValor rotulo="Saldo atual" valor={saldoInicial} aoMudar={setSaldoInicial} />}
-        {reserva && <Interruptor rotulo="Ativa (conta no total guardado)" marcado={ativa} aoMudar={setAtiva} />}
+        {!reserva && !grupo && <CampoValor rotulo="Saldo atual" valor={saldoInicial} aoMudar={setSaldoInicial} />}
+        {reserva && <Interruptor rotulo="Contar no total guardado" marcado={ativa} aoMudar={setAtiva} />}
         <Erro mensagem={erro} />
         <Botao type="submit" carregando={salvando}>
           Salvar
@@ -408,5 +458,69 @@ function Historico({ reserva, saldos, aoFechar }: { reserva: Reserva; saldos: Re
         </table>
       )}
     </Modal>
+  );
+}
+
+function Aplicacoes({
+  aplicacoes,
+  reservas,
+  todas,
+  reservaId,
+  aoMover,
+}: {
+  aplicacoes: Investimento[];
+  reservas: Reserva[];
+  todas: Investimento[];
+  reservaId: string;
+  aoMover: () => void;
+}) {
+  const { casa } = useApp();
+  const [erro, setErro] = useState<string | null>(null);
+  const destinos = reservas.filter((r) => r.id !== reservaId && r.ativa);
+  async function mover(a: Investimento, destino: string) {
+    setErro(null);
+    try {
+      await moverAplicacao(
+        casa.id,
+        { ...a, saldo: Number(a.saldo) },
+        destino,
+        todas.map((i) => ({ ...i, saldo: Number(i.saldo) })),
+      );
+      aoMover();
+    } catch (e) {
+      setErro(formatarErro(e));
+    }
+  }
+  return (
+    <details className="mt-3 text-sm">
+      <summary className="cursor-pointer text-slate-500">Aplicações ({aplicacoes.length})</summary>
+      <Erro mensagem={erro} />
+      <ul className="mt-2 max-h-72 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800">
+        {aplicacoes.map((a) => (
+          <li key={a.id} className="flex flex-wrap items-center gap-2 py-1.5">
+            <span className="min-w-0 flex-1 truncate text-xs">
+              {a.nome}
+              {a.vencimento && <span className="text-slate-500"> · vence {formatarData(a.vencimento)}</span>}
+            </span>
+            <Dinheiro valor={Number(a.saldo)} className="text-xs font-medium" />
+            {destinos.length > 0 && (
+              <select
+                aria-label={`Mover ${a.nome} para outra reserva`}
+                value=""
+                onChange={(e) => e.target.value && mover(a, e.target.value)}
+                className="min-h-8 max-w-full rounded-lg border border-slate-300 bg-white px-1 text-xs dark:border-slate-700 dark:bg-slate-900"
+              >
+                <option value="">Mover para…</option>
+                {destinos.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.nome}
+                  </option>
+                ))}
+              </select>
+            )}
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
