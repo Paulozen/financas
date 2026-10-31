@@ -38,7 +38,7 @@ export default function Projetos() {
       ) : projetos.length === 0 ? (
         <Vazio titulo="Nenhum projeto" texto="Crie o projeto do casamento para acompanhar fornecedores, contratos e parcelas." />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {projetos.map((p) => {
             const itens = dados!.itens.filter((i) => i.projeto_id === p.id);
             const r = resumoProjeto(itens, dados!.parcelas);

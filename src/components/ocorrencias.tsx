@@ -46,7 +46,9 @@ export function LinhaOcorrencia({ o, aoAbrir, aoPagar }: { o: Ocorrencia; aoAbri
   return (
     <li className="flex items-center gap-2 py-2">
       <button type="button" onClick={aoAbrir} className="flex min-w-0 flex-1 flex-col items-start text-left">
-        <span className={clsx("truncate font-medium", o.status === "cancelado" && "line-through opacity-60")}>{o.descricao}</span>
+        <span className={clsx("line-clamp-2 max-w-full font-medium break-words", o.status === "cancelado" && "line-through opacity-60")}>
+          {o.descricao}
+        </span>
         <span className="flex flex-wrap items-center gap-1 text-xs text-slate-500">
           {formatarData(o.vencimento)} · {nomeCategoria(o.categoria_id)} · {nomeDono(o.dono_membro_id)} <SeloStatus o={o} />
           {o.paga_com_reserva && <Selo cor="azul">dinheiro guardado</Selo>}
@@ -63,9 +65,9 @@ export function LinhaOcorrencia({ o, aoAbrir, aoPagar }: { o: Ocorrencia; aoAbri
         )}
       </div>
       {o.status === "pendente" && (
-        <Botao variante="secundario" className="!min-h-9 !px-3" onClick={aoPagar} aria-label={`Pagar ${o.descricao}`}>
+        <Botao variante="secundario" className="!min-h-9 shrink-0 !px-2.5 sm:!px-3" onClick={aoPagar} aria-label={`Pagar ${o.descricao}`}>
           <Check className="size-4" aria-hidden />
-          Pagar
+          <span className="hidden sm:inline">Pagar</span>
         </Botao>
       )}
     </li>

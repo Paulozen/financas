@@ -71,7 +71,7 @@ export default function Configuracoes() {
       <div className="mb-4">
         <BancosConectados />
       </div>
-      <form onSubmit={salvar} className="grid gap-4 lg:grid-cols-2 lg:items-start">
+      <form onSubmit={salvar} className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
         <Cartao>
           <Titulo>Você e a casa</Titulo>
           <div className="flex flex-col gap-4">

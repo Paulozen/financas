@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { hojeISO, somarDias } from "../datas";
 import { semAcentos } from "../importacao/texto";
 import type { ClientePluggy } from "./api";
-import { acharJaImportadas, centavos, converterTransacao, nomeBanco, nomeConta, type ImportadaPorArquivo, type TransacaoExternaNova } from "./converter";
+import { acharJaImportadas, centavos, converterTransacao, nomeBanco, nomeConta, nomeContaAntigo, type ImportadaPorArquivo, type TransacaoExternaNova } from "./converter";
 import { aposSincronizar } from "./pos-sincronizacao";
 
 const DIAS_PRIMEIRA = 90;
@@ -100,7 +100,7 @@ export async function sincronizarCasa(
                 tipo: conta.type,
                 subtipo: conta.subtype ?? null,
                 // nome e dono editados na tela são preservados
-                nome: existente?.nome ?? nomeConta(conta),
+                nome: existente && existente.nome !== nomeContaAntigo(conta) ? existente.nome : nomeConta(conta),
                 dono_membro_id: existente?.dono_manual ? existente.dono_membro_id : donoId,
                 saldo: centavos(conta.balance),
                 saldo_em: agora,

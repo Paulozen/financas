@@ -47,12 +47,12 @@ export function NavInferior() {
               href={href}
               aria-current={ativo(href) ? "page" : undefined}
               className={clsx(
-                "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium",
+                "flex min-h-14 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-medium min-[400px]:text-[11px]",
                 ativo(href) ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500",
               )}
             >
               <Icone className="size-5" aria-hidden />
-              {rotulo}
+              <span className="max-w-full truncate">{rotulo}</span>
             </Link>
           </li>
         ))}

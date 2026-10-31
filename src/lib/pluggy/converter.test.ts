@@ -58,6 +58,8 @@ describe("pluggy: conversão", () => {
 
   it("nome da conta e itens por dono no ambiente", () => {
     expect(nomeConta({ id: "a", itemId: "i", type: "CREDIT", marketingName: "Cartão Exemplo Gold", number: "1234567890" })).toBe("Cartão Exemplo Gold 7890");
+    expect(nomeConta({ id: "b", itemId: "i", type: "BANK", subtype: "CHECKING_ACCOUNT", name: "BANCO EXEMPLO 01-2", number: "0001-2" })).toBe("Banco Exemplo · conta 01-2");
+    expect(nomeConta({ id: "c", itemId: "i", type: "BANK", subtype: "SAVINGS_ACCOUNT", name: "PICPAY INSTITUICAO DE PAGAMENTO S.A", number: "123" })).toBe("PicPay · poupança 123");
     expect(itensDoAmbiente({ PLUGGY_ITEMS_ANA: "i1, i2", PLUGGY_ITEMS_BRUNO: "", PLUGGY_CLIENT_ID: "x" })).toEqual([
       { itemId: "i1", dono: "ANA" },
       { itemId: "i2", dono: "ANA" },

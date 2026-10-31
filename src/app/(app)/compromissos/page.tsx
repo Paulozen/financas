@@ -67,7 +67,7 @@ function Parcelados() {
       ) : contratos.length === 0 ? (
         <Vazio titulo="Nenhum parcelado" texto="Cadastre aqui a construtora, um financiamento ou qualquer compromisso com parcelas." />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {contratos.map((c) => {
             const r = resumoContrato(c, dados!.ocorrencias);
             return (
@@ -126,7 +126,7 @@ function Dividas() {
           texto="Para dívidas sem parcelas fixas (ex.: o carro): você paga quando puder, com uma meta mensal opcional."
         />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {resumos.map(({ d, r }) => (
             <Link key={d.id} href={`/compromissos/divida/${d.id}`}>
               <Cartao className={r.quitada ? "opacity-70" : "hover:border-emerald-400"}>
@@ -182,7 +182,7 @@ function Cartoes() {
       ) : cartoes.length === 0 ? (
         <Vazio titulo="Nenhum cartão" texto="Cada cartão vira uma despesa mensal “Fatura”. Você ajusta o valor quando a fatura fecha." />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {cartoes.map((c) => {
             const regra = dados!.regras.find((r) => r.cartao_id === c.id);
             const faturas = dados!.faturas.filter((f) => f.origem_id === regra?.id);

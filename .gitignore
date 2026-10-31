@@ -20,3 +20,6 @@ npm-debug.log*
 # instruções locais
 PROMPT_CLAUDE_CODE.md
 scripts/_*
+
+# capturas da verificação de layout (têm dados reais)
+e2e-capturas/

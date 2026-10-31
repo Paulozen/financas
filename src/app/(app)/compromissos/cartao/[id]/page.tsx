@@ -92,37 +92,31 @@ export default function DetalheCartao() {
       )}
 
       {contas.length > 0 && (
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-          <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+          <div className="flex min-w-0 flex-col gap-4">
             <Cartao>
               <Titulo>Parcelas em aberto</Titulo>
               {!parcelas.length ? (
                 <p className="text-sm text-slate-500">Nenhuma compra parcelada com parcelas por vir.</p>
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-slate-500">
-                      <th className="font-medium">Compra</th>
-                      <th className="text-right font-medium">Parcela</th>
-                      <th className="text-right font-medium">Valor</th>
-                      <th className="text-right font-medium">Falta</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parcelas.map((p, i) => (
-                      <tr key={i} className="border-t border-slate-100 dark:border-slate-800">
-                        <td className="max-w-40 truncate py-1.5 pr-2" title={p.descricao}>
+                <ul className="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+                  {parcelas.map((p, i) => (
+                    <li key={i} className="flex items-center justify-between gap-3 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium" title={p.descricao}>
                           {p.descricao}
-                        </td>
-                        <td className="text-right tabular-nums">
-                          {p.parcelaAtual}/{p.total}
-                        </td>
-                        <td className="text-right tabular-nums">{formatarReais(p.valorParcela)}</td>
-                        <td className="text-right font-medium tabular-nums">{formatarReais(p.falta)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          parcela {p.parcelaAtual}/{p.total} · {formatarReais(p.valorParcela)} por mês
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-[11px] text-slate-500">falta</p>
+                        <Dinheiro valor={p.falta} className="font-semibold" />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
             </Cartao>
 
@@ -220,18 +214,16 @@ function LinhaCompra({ compra, aoMudar }: { compra: Compra; aoMudar: () => void 
       // Aprende: próximas compras com a mesma descrição ganham a mesma categoria.
       if (categoriaId)
         checar(
-          await sb
-            .from("regras_importacao")
-            .upsert(
-              {
-                casa_id: casa.id,
-                padrao: padraoDe(compra),
-                acao: "novo",
-                categoria_id: categoriaId,
-                atualizado_em: new Date().toISOString(),
-              },
-              { onConflict: "casa_id,padrao" },
-            ),
+          await sb.from("regras_importacao").upsert(
+            {
+              casa_id: casa.id,
+              padrao: padraoDe(compra),
+              acao: "novo",
+              categoria_id: categoriaId,
+              atualizado_em: new Date().toISOString(),
+            },
+            { onConflict: "casa_id,padrao" },
+          ),
         );
       aoMudar();
     } catch (e) {

@@ -80,7 +80,7 @@ export default function Reservas() {
                     <ul className="text-xs text-slate-500">
                       {g.itens.map((i) => (
                         <li key={i.id} className="flex justify-between gap-2">
-                          <span className="truncate">
+                          <span className="min-w-0 truncate">
                             {i.nome} · {nomeDono(i.dono_membro_id)}
                           </span>
                           <Dinheiro valor={i.valor} />
@@ -104,7 +104,7 @@ export default function Reservas() {
           {reservas.length === 0 ? (
             <Vazio titulo="Nenhuma reserva" texto="Cadastre seus CDBs e atualize o saldo de vez em quando para acompanhar a evolução." />
           ) : (
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {reservas.map((r) => {
                 const s = saldoAtual(r.id, saldos);
                 return (
@@ -183,6 +183,9 @@ function GraficoReservas({ reservas, saldos }: { reservas: Reserva[]; saldos: Re
   return (
     <Cartao className="mb-4">
       <Titulo>Evolução</Titulo>
+      {dados.length < 2 && (
+        <p className="-mt-2 mb-2 text-xs text-slate-500">O histórico começa agora: a cada sincronização entra um ponto novo e a linha vai se formando.</p>
+      )}
       <div className="h-56" role="img" aria-label="Gráfico da evolução do saldo das reservas">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={dados} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -434,28 +437,30 @@ function Historico({ reserva, saldos, aoFechar }: { reserva: Reserva; saldos: Re
       {lista.length === 0 ? (
         <p className="text-sm text-slate-500">Nenhum saldo registrado.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-slate-500">
-              <th className="py-1 font-medium">Data</th>
-              <th className="py-1 text-right font-medium">Saldo</th>
-              <th className="sr-only">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map((s) => (
-              <tr key={s.id} className="border-t border-slate-100 dark:border-slate-800">
-                <td className="py-2">{formatarData(s.data)}</td>
-                <td className="py-2 text-right tabular-nums">{formatarReais(s.valor)}</td>
-                <td className="py-2 text-right">
-                  <button type="button" className="text-xs text-red-600" onClick={() => excluir(s)}>
-                    excluir
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-500">
+                <th className="py-1 font-medium">Data</th>
+                <th className="py-1 text-right font-medium">Saldo</th>
+                <th className="sr-only">Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {lista.map((s) => (
+                <tr key={s.id} className="border-t border-slate-100 dark:border-slate-800">
+                  <td className="py-2">{formatarData(s.data)}</td>
+                  <td className="py-2 text-right tabular-nums">{formatarReais(s.valor)}</td>
+                  <td className="py-2 text-right">
+                    <button type="button" className="text-xs text-red-600" onClick={() => excluir(s)}>
+                      excluir
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Modal>
   );

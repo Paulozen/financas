@@ -47,6 +47,7 @@ Outros comandos:
 | `npm run build` | Build de produção |
 | `node scripts/verificar-rls.mjs` | Confere o isolamento por RLS simulando os dois usuários numa transação desfeita (não grava nada) |
 | `node scripts/gerar-icones.mjs` | Regera os ícones do PWA |
+| `npm run verificar:layout [url]` | Entra com `E2E_EMAIL`/`E2E_SENHA` do `.env.local`, percorre todas as telas em 360×800 e 390×844, claro e escuro, e falha se alguma tiver rolagem horizontal. Capturas em `e2e-capturas/` (fora do Git; têm dados reais, apague depois). `ROTAS=/,/caixa` limita as telas e `TOPO=1` captura só a primeira tela. |
 
 ## Migrações
 

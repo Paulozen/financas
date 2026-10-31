@@ -147,7 +147,7 @@ function DoMes() {
             texto="Cadastre seu salário e as contas fixas na aba Recorrentes, ou use o + para um lançamento rápido."
           />
         ) : (
-          <Cartao>
+          <Cartao className="mb-20 lg:mb-0">
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {lista.map((o) => (
                 <LinhaOcorrencia key={o.id} o={o} aoAbrir={() => setAberta(o)} aoPagar={() => setPagando(o)} />

@@ -148,7 +148,10 @@ export function Interruptor({ rotulo, marcado, aoMudar }: { rotulo: string; marc
 export function Cartao({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <section
-      className={clsx("rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900", className)}
+      className={clsx(
+        "min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900",
+        className,
+      )}
     >
       {children}
     </section>
@@ -205,7 +208,7 @@ export function Dinheiro({
   return (
     <span
       className={clsx(
-        "tabular-nums",
+        "whitespace-nowrap tabular-nums",
         sinal && valor < 0 && "text-red-600 dark:text-red-400",
         sinal && valor > 0 && "text-emerald-600 dark:text-emerald-400",
         className,

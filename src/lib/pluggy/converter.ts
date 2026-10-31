@@ -72,13 +72,38 @@ export function nomeBanco(conector: string | null | undefined, contas: Pick<Plug
   const conta = contas.find((c) => c.type === "BANK") ?? contas[0];
   const nome = (conta?.name || conta?.marketingName || "").split(/\s[-(]|\s\d|\s(?:instituicao|instituição|s\.a)/i)[0].trim();
   if (!nome) return conector ?? null;
+  // Nomes conhecidos com a grafia de mercado.
+  for (const [re, bonito] of CONHECIDOS) if (re.test(nome)) return bonito;
   return nome
     .toLowerCase()
     .replace(/(^|\s)\S/g, (l) => l.toUpperCase());
 }
 
+const CONHECIDOS: [RegExp, string][] = [
+  [/^picpay/i, "PicPay"],
+  [/^nu pagamentos|^nubank/i, "Nubank"],
+  [/^banco inter|^inter$/i, "Banco Inter"],
+  [/^caixa/i, "Caixa"],
+  [/^itau|^itaú/i, "Itaú"],
+  [/^bradesco/i, "Bradesco"],
+  [/^banco do brasil/i, "Banco do Brasil"],
+  [/^santander/i, "Santander"],
+];
+
 /** Nome de exibição da conta: o comercial se houver, senão o nome técnico. */
 export function nomeConta(c: PluggyConta): string {
+  const final = c.number ? ` ${String(c.number).slice(-4)}` : "";
+  if (c.type === "BANK") {
+    // "PicPay · conta 69-0" em vez do nome jurídico da instituição.
+    const banco = nomeBanco(null, [c]) ?? "Conta";
+    return `${banco} · ${c.subtype === "SAVINGS_ACCOUNT" ? "poupança" : "conta"}${final}`;
+  }
+  const base = (c.marketingName || c.name || "Cartão").trim();
+  return `${base}${final}`;
+}
+
+/** Nome padrão das versões anteriores (para trocar só o que o usuário não editou). */
+export function nomeContaAntigo(c: PluggyConta): string {
   const base = (c.marketingName || c.name || (c.type === "CREDIT" ? "Cartão" : "Conta")).trim();
   const final = c.number ? ` ${String(c.number).slice(-4)}` : "";
   return `${base}${final}`;

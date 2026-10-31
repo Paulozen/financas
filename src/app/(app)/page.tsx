@@ -202,7 +202,7 @@ export default function Painel() {
       )}
       <Erro mensagem={erro} />
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
         {semNada && (
           <div className="lg:col-span-2">
             <Vazio
@@ -218,37 +218,33 @@ export default function Painel() {
         )}
 
         {/* 1. Sobra do mês */}
-        <div className="flex flex-col gap-4 lg:order-1">
+        <div className="order-1 flex min-w-0 flex-col gap-4">
           <Cartao>
             <Titulo>Sobra do mês</Titulo>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-500">
-                  <th className="font-medium" />
-                  <th className="text-right font-medium">Entradas</th>
-                  <th className="text-right font-medium">Saídas</th>
-                  <th className="text-right font-medium">Sobra</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(["previsto", "realizado"] as const).map((k) => (
-                  <tr key={k}>
-                    <th scope="row" className="py-1 text-left font-medium capitalize">
-                      {k}
-                    </th>
-                    <td className="text-right">
-                      <Dinheiro valor={sobra[k].entradas} />
-                    </td>
-                    <td className="text-right">
-                      <Dinheiro valor={sobra[k].saidas} />
-                    </td>
-                    <td className="text-right">
-                      <Dinheiro valor={sobra[k].saldo} sinal className={k === "previsto" ? "text-base font-bold" : "font-semibold"} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span className="text-sm text-slate-500">Sobra prevista</span>
+              <Dinheiro valor={sobra.previsto.saldo} sinal className="text-2xl font-bold" />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+              {(
+                [
+                  ["Entradas", sobra.previsto.entradas, sobra.realizado.entradas, "recebido", "bg-emerald-500"],
+                  ["Saídas", sobra.previsto.saidas, sobra.realizado.saidas, "pago", "bg-red-500"],
+                ] as const
+              ).map(([rotulo, previsto, realizado, verbo, cor]) => (
+                <div key={rotulo} className="min-w-0 rounded-xl bg-slate-50 p-2 dark:bg-slate-800/50">
+                  <p className="text-xs text-slate-500">{rotulo}</p>
+                  <Dinheiro valor={previsto} className="block truncate font-semibold" />
+                  <Barra valor={realizado} total={previsto} cor={cor} />
+                  <p className="mt-1 truncate text-[11px] text-slate-500">
+                    {verbo} {formatarReais(realizado)}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Realizado até agora: <Dinheiro valor={sobra.realizado.saldo} sinal className="font-medium" />
+            </p>
           </Cartao>
 
           {/* 6. Total guardado e racha (no computador, embaixo da sobra) */}
@@ -256,7 +252,7 @@ export default function Painel() {
         </div>
 
         {/* 2. Projeção */}
-        <Cartao className="lg:order-3 lg:col-span-2">
+        <Cartao className="order-3 lg:col-span-2">
           <Titulo>Projeção (12 meses)</Titulo>
           <GraficoProjecao dados={proj} />
           {proj.some((p) => p.sobra < 0) && (
@@ -280,35 +276,37 @@ export default function Painel() {
           )}
           <details className="mt-2 text-sm">
             <summary className="cursor-pointer text-xs text-slate-500">Ver em tabela</summary>
-            <table className="mt-2 w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-500">
-                  <th className="font-medium">Mês</th>
-                  <th className="text-right font-medium">Sobra</th>
-                  {proj[0]?.acumulado !== null && <th className="text-right font-medium">Saldo acumulado</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {proj.map((p) => (
-                  <tr key={p.mes} className="border-t border-slate-100 dark:border-slate-800">
-                    <td className="py-1 first-letter:uppercase">{nomeMesCurto(p.mes)}</td>
-                    <td className="text-right">
-                      <Dinheiro valor={p.sobra} sinal />
-                    </td>
-                    {p.acumulado !== null && (
-                      <td className="text-right">
-                        <Dinheiro valor={p.acumulado} sinal />
-                      </td>
-                    )}
+            <div className="overflow-x-auto">
+              <table className="mt-2 w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-slate-500">
+                    <th className="font-medium">Mês</th>
+                    <th className="text-right font-medium">Sobra</th>
+                    {proj[0]?.acumulado !== null && <th className="text-right font-medium">Saldo acumulado</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {proj.map((p) => (
+                    <tr key={p.mes} className="border-t border-slate-100 dark:border-slate-800">
+                      <td className="py-1 first-letter:uppercase">{nomeMesCurto(p.mes)}</td>
+                      <td className="text-right">
+                        <Dinheiro valor={p.sobra} sinal />
+                      </td>
+                      {p.acumulado !== null && (
+                        <td className="text-right">
+                          <Dinheiro valor={p.acumulado} sinal />
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </details>
         </Cartao>
 
         {/* 3. Vencimentos */}
-        <Cartao className="lg:order-2 lg:row-span-1">
+        <Cartao className="order-2">
           <Titulo>Vencimentos</Titulo>
           {venc.atrasados.length > 0 && (
             <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-2 dark:border-red-900 dark:bg-red-950/40">
@@ -335,7 +333,7 @@ export default function Painel() {
 
         {/* 4. Progresso */}
         {progresso.length > 0 && (
-          <Cartao className="lg:order-4">
+          <Cartao className="order-4">
             <Titulo>Progresso</Titulo>
             <ul className="flex flex-col gap-3">
               {progresso.map((p) => (
@@ -356,7 +354,7 @@ export default function Painel() {
         )}
 
         {/* 5. Gastos por categoria */}
-        <Cartao className="lg:order-5">
+        <Cartao className="order-5">
           <Titulo>Gastos por categoria</Titulo>
           {gastos.length === 0 ? (
             <p className="text-sm text-slate-500">Nenhuma saída neste mês.</p>
@@ -417,7 +415,7 @@ export default function Painel() {
         </Cartao>
 
         {/* 6. Rodapé (no celular, no fim da tela) */}
-        <div className="grid grid-cols-2 gap-3 text-center text-sm lg:hidden">{rodape}</div>
+        <div className="order-6 grid grid-cols-2 gap-3 text-center text-sm lg:hidden">{rodape}</div>
       </div>
 
       <ModalOcorrencia o={aberta} aoFechar={() => setAberta(null)} aoPagar={setPagando} />
@@ -429,7 +427,8 @@ export default function Painel() {
 function GraficoProjecao({ dados }: { dados: MesProjecao[] }) {
   const cores = useCoresGrafico();
   const comAcumulado = dados[0]?.acumulado !== null;
-  const linhas = dados.map((d) => ({ ...d, rotulo: nomeMesCurto(d.mes) }));
+  // Rótulos curtos: "nov", "dez", "jan/27" (o ano só aparece em janeiro e no primeiro mês).
+  const linhas = dados.map((d, i) => ({ ...d, rotulo: i === 0 || d.mes.endsWith("-01") ? nomeMesCurto(d.mes) : nomeMesCurto(d.mes).slice(0, 3) }));
   return (
     <div className="h-56 lg:h-72" role="img" aria-label="Gráfico da sobra prevista nos próximos 12 meses">
       <ResponsiveContainer width="100%" height="100%">
@@ -437,12 +436,11 @@ function GraficoProjecao({ dados }: { dados: MesProjecao[] }) {
           <CartesianGrid stroke={cores.grade} vertical={false} />
           <XAxis
             dataKey="rotulo"
-            tick={{ fill: cores.textoSecundario, fontSize: 10 }}
+            tick={{ fill: cores.textoSecundario, fontSize: 11 }}
             stroke={cores.grade}
-            interval={0}
-            angle={-45}
-            textAnchor="end"
-            height={40}
+            interval="preserveStartEnd"
+            minTickGap={6}
+            tickMargin={4}
           />
           <YAxis tickFormatter={reaisCurto} tick={{ fill: cores.textoSecundario, fontSize: 11 }} stroke={cores.grade} width={60} />
           <ReferenceLine y={0} stroke={cores.textoSecundario} />
