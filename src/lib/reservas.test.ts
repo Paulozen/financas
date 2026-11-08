@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resumoMesRacha, saldoRacha } from "./racha";
-import { resumoGuardado, serieReservas, totalGuardado } from "./reservas";
+import { resumoGuardado, serieGuardado, serieReservas, totalGuardado } from "./reservas";
 import type { RachaMovimento, Reserva, ReservaSaldo } from "./tipos";
 
 describe("reservas", () => {
@@ -58,5 +58,28 @@ describe("total guardado com contas", () => {
     expect(casal).toMatchObject({ totalConta: 610000, totalReservas: 350000, total: 960000 });
     expect(casal.emConta.map((c) => c.nome)).toEqual(["Conta A", "Conta B"]);
     expect(resumoGuardado(reservas, saldos, contas, "a")).toMatchObject({ totalConta: 600000, totalReservas: 300000, total: 900000 });
+  });
+});
+
+describe("serieGuardado", () => {
+  it("começa quando todas as fontes têm histórico e repete o último valor", () => {
+    const s = serieGuardado(
+      [{ id: "r1" } as Reserva],
+      [
+        { id: "a", casa_id: "c", reserva_id: "r1", data: "2026-01-01", valor: 1000 },
+        { id: "b", casa_id: "c", reserva_id: "r1", data: "2026-01-05", valor: 1500 },
+        { id: "c", casa_id: "c", reserva_id: "r1", data: "2026-01-09", valor: 1700 },
+      ] as ReservaSaldo[],
+      [
+        { conta_externa_id: "k", data: "2026-01-06", valor: 300 },
+        { conta_externa_id: "k", data: "2026-01-09", valor: 200 },
+        { conta_externa_id: "outra", data: "2026-01-01", valor: 999 },
+      ],
+      ["k"],
+    );
+    expect(s).toEqual([
+      { data: "2026-01-06", contas: 300, reservas: 1500, total: 1800 },
+      { data: "2026-01-09", contas: 200, reservas: 1700, total: 1900 },
+    ]);
   });
 });

@@ -8,12 +8,14 @@ import { useApp, useCarregar } from "@/components/app-contexto";
 import { ListaAvisos } from "@/components/avisos";
 import { Cabecalho } from "@/components/cabecalho";
 import { MesAMes } from "@/components/graficos";
+import { Faisca, MapaDinheiro } from "@/components/mapa-dinheiro";
 import { Cartao, Carregando, Dinheiro, Erro, Titulo, Vazio } from "@/components/ui";
 import { deslocarPeriodo, periodoDe, relatorio, type Periodo, type TipoPeriodo } from "@/lib/analises";
 import { carregarBaseGastos, gastosDaVisao } from "@/lib/analises-dados";
 import { ehEssencial, IconeCategoria } from "@/lib/categorias-visual";
-import { formatarData, formatarDiaMes, hojeISO, mesDe, nomeMes, nomeMesCurto } from "@/lib/datas";
+import { formatarData, formatarDiaMes, hojeISO, mesDe, nomeMes, nomeMesCurto, somarMeses } from "@/lib/datas";
 import { formatarReais } from "@/lib/dinheiro";
+import { contaNaSobra, valorConta } from "@/lib/painel";
 
 const TIPOS: { valor: TipoPeriodo; rotulo: string }[] = [
   { valor: "mes", rotulo: "Mês" },
@@ -43,6 +45,24 @@ export default function Analises() {
   const r = relatorio({ ocorrencias, gastos, porDia, categorias, periodo, hoje, formatar: formatarReais, ehEssencial });
   const cat = (id: string | null) => categorias.find((c) => c.id === id);
   const emAndamento = mesDe(hoje) >= periodo.inicio && mesDe(hoje) <= periodo.fim;
+  // Tendência: gasto dos 6 meses até o fim do período, por categoria.
+  const meses6 = [5, 4, 3, 2, 1, 0].map((i) => somarMeses(periodo.fim, -i));
+  const tendencia = (id: string | null) => meses6.map((m) => gastos.filter((g) => g.mes === m && g.categoria_id === id).reduce((s, g) => s + g.valor, 0));
+  // Mapa do dinheiro: entradas por categoria -> saídas por categoria (6 maiores + outras) e sobra.
+  const entradasCat = new Map<string | null, number>();
+  for (const o of ocorrencias)
+    if (o.tipo === "entrada" && contaNaSobra(o) && mesDe(o.vencimento) >= periodo.inicio && mesDe(o.vencimento) <= periodo.fim)
+      entradasCat.set(o.categoria_id, (entradasCat.get(o.categoria_id) ?? 0) + valorConta(o));
+  const fluxoE = [...entradasCat.entries()]
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([id, valor]) => ({ nome: cat(id)?.nome ?? "Sem categoria", valor, cor: cat(id)?.cor ?? "#94a3b8" }));
+  const maioresS = r.categorias.slice(0, 6);
+  const restoS = r.categorias.slice(6).reduce((s, c) => s + c.total, 0);
+  const fluxoS = [
+    ...maioresS.map((c) => ({ nome: cat(c.categoria_id)?.nome ?? "Sem categoria", valor: c.total, cor: cat(c.categoria_id)?.cor ?? "#94a3b8" })),
+    ...(restoS > 0 ? [{ nome: "Outras", valor: restoS, cor: "#94a3b8" }] : []),
+  ];
 
   return (
     <>
@@ -240,8 +260,11 @@ export default function Analises() {
                       <li key={c.categoria_id ?? "sem"} className="flex items-center gap-3 py-2.5">
                         <IconeCategoria categoria={cat(c.categoria_id)} />
                         <span className="min-w-0 flex-1">
-                          <span className="flex justify-between gap-2">
+                          <span className="flex items-center justify-between gap-2">
                             <span className="truncate text-sm font-semibold">{cat(c.categoria_id)?.nome ?? "Sem categoria"}</span>
+                            <span className="ml-auto hidden min-[380px]:block" title="Últimos 6 meses">
+                              <Faisca valores={tendencia(c.categoria_id)} cor={cat(c.categoria_id)?.cor ?? "#94a3b8"} />
+                            </span>
                             <Dinheiro valor={c.total} className="text-sm font-bold" />
                           </span>
                           <span className="flex justify-between gap-2 text-[11px] text-slate-500">
@@ -267,6 +290,14 @@ export default function Analises() {
                 </p>
               )}
             </Cartao>
+
+            {fluxoE.length > 0 && fluxoS.length > 0 && (
+              <Cartao>
+                <Titulo>Mapa do dinheiro</Titulo>
+                <p className="-mt-2 mb-2 text-xs text-slate-500">De onde veio e para onde foi no período.</p>
+                <MapaDinheiro entradas={fluxoE} saidas={fluxoS} />
+              </Cartao>
+            )}
 
             <Cartao>
               <Titulo>Maiores gastos</Titulo>

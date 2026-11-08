@@ -167,6 +167,9 @@ export interface Reserva {
   /** grupo automático de investimentos do Open Finance */
   automatica?: boolean;
   grupo_chave?: string | null;
+  /** meta (centavos) e data alvo */
+  meta_valor?: number | null;
+  meta_data?: string | null;
 }
 
 export interface ReservaSaldo {

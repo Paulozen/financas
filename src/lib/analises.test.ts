@@ -131,6 +131,8 @@ describe("detectarFixos", () => {
     cadastrada: false,
     parcelada: false,
     realizado: true,
+    semCategoria: false,
+    ref: "x",
     ...extra,
   });
   it("acha o que se repete com valor parecido em 3 de 4 meses", () => {

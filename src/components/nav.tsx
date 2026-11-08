@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { CalendarClock, ChartPie, FileUp, Home, Inbox, List, LogOut, Menu, PartyPopper, PiggyBank, Settings, Tags, Trophy, Wallet } from "lucide-react";
+import { CalendarClock, ChartPie, Tag, FileUp, Home, Inbox, List, LogOut, Menu, PartyPopper, PiggyBank, Settings, Tags, Trophy, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +21,7 @@ const secundarios = [
   { href: "/racha", rotulo: "Caixa do racha", Icone: Trophy },
   { href: "/importar", rotulo: "Importar extrato", Icone: FileUp },
   { href: "/categorias", rotulo: "Categorias", Icone: Tags },
+  { href: "/categorizar", rotulo: "Sem categoria", Icone: Tag },
   { href: "/configuracoes", rotulo: "Configurações", Icone: Settings },
 ];
 

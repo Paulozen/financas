@@ -32,6 +32,10 @@ export interface Gasto {
   cadastrada: boolean;
   parcelada: boolean;
   realizado: boolean;
+  /** compra do cartão ou ocorrência sem categoria escolhida */
+  semCategoria: boolean;
+  /** id da compra (transacoes_externas) ou da ocorrência, para categorizar */
+  ref: string;
 }
 
 /**
@@ -67,6 +71,8 @@ export function gastosDetalhados(ocorrencias: Ocorrencia[], compras: CompraDoCar
           cadastrada: false,
           parcelada: ehParcelada(c),
           realizado: true,
+          semCategoria: !c.categoria_id,
+          ref: c.id ?? "",
         });
       }
       if (valor - soma > 0)
@@ -81,6 +87,8 @@ export function gastosDetalhados(ocorrencias: Ocorrencia[], compras: CompraDoCar
           cadastrada: true,
           parcelada: false,
           realizado: o.status === "pago",
+          semCategoria: false,
+          ref: o.id,
         });
       continue;
     }
@@ -96,6 +104,8 @@ export function gastosDetalhados(ocorrencias: Ocorrencia[], compras: CompraDoCar
       cadastrada: o.origem_tipo !== "pontual",
       parcelada: o.parcela_num !== null,
       realizado: o.status === "pago",
+      semCategoria: !o.categoria_id,
+      ref: o.id,
     });
   }
   return lista;
@@ -254,13 +264,16 @@ function somaPorCategoria(gastos: Gasto[], p: Periodo) {
  * Saídas que se repetem e ainda não estão cadastradas: mesma descrição em pelo menos 3
  * dos últimos 4 meses (até `ateMes`), com valor parecido (±35% da média).
  */
+const GENERICAS = /^(pagamento|pagto|pgto|pix|transferencia|ted|doc|compra|debito|boleto)( (realizado|realizada|enviado|enviada|efetuado|efetuada|recebido|pago|paga))?$/;
+
 export function detectarFixos(gastos: Gasto[], ateMes: string): FixoDetectado[] {
   const ultimos = [0, 1, 2, 3].map((i) => somarMeses(ateMes, -i));
   const grupos = new Map<string, { meses: Map<string, number>; descricao: string; categoria_id: string | null }>();
   for (const g of gastos) {
     if (g.cadastrada || g.parcelada || !ultimos.includes(g.mes)) continue;
     const k = normalizarDescricao(g.descricao).replace(/\d+/g, "").replace(/\s+/g, " ").trim();
-    if (k.length < 3) continue;
+    // Descrições genéricas de banco ("Pagamento realizado", "Pix enviado") não dizem o que é.
+    if (k.length < 3 || GENERICAS.test(k)) continue;
     const grupo = grupos.get(k) ?? { meses: new Map(), descricao: g.descricao, categoria_id: g.categoria_id };
     grupo.meses.set(g.mes, (grupo.meses.get(g.mes) ?? 0) + g.valor);
     grupos.set(k, grupo);

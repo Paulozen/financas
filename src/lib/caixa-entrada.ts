@@ -2,6 +2,7 @@
 
 // Caixa de entrada do Open Finance: transações de conta corrente "a revisar".
 // Reaproveita as sugestões e a confirmação da importação por arquivo.
+import { categoriaDoPacote } from "./pacote-regras";
 import type { LinhaPrevia } from "@/components/importar/previa";
 import { somarDias } from "./datas";
 import { buscarTodos, checar } from "./db";
@@ -84,10 +85,13 @@ export async function carregarCaixa(casa: Casa, categorias: Categoria[]): Promis
         : null;
     const s = sugerir(t, { regras, pendentes: pendentes.filter((p) => !usados.has(p.id)), racha });
     if (s.vinculo_id) usados.add(s.vinculo_id);
-    // Sem regra aprendida: usa a categoria que a Pluggy deu à transação.
+    // Sem regra aprendida: pacote de lojas conhecidas e, por fim, a categoria da Pluggy.
     const categoria =
       s.categoria_id ??
-      (s.acao === "novo" ? categoriaDaPluggy(externa.categoria_pluggy, t.valor >= 0 ? "entrada" : "saida", categorias) : null);
+      (s.acao === "novo"
+        ? ((t.valor < 0 ? categoriaDoPacote(t.descricao, categorias) : null) ??
+          categoriaDaPluggy(externa.categoria_pluggy, t.valor >= 0 ? "entrada" : "saida", categorias))
+        : null);
     const donoPadrao = conta?.dono_membro_id ?? "";
     return {
       t,

@@ -39,6 +39,40 @@ export function serieReservas(reservas: Reserva[], saldos: ReservaSaldo[]): Reco
   });
 }
 
+/**
+ * Evolução do total guardado: contas correntes (histórico diário) + reservas, repetindo
+ * o último valor conhecido de cada uma.
+ */
+export function serieGuardado(
+  reservas: Reserva[],
+  saldos: ReservaSaldo[],
+  contaSaldos: { conta_externa_id: string; data: string; valor: number }[],
+  contas: string[],
+): { data: string; contas: number; reservas: number; total: number }[] {
+  const ids = new Set(reservas.map((r) => r.id));
+  const daConta = new Set(contas);
+  const pontos = [
+    ...saldos.filter((s) => ids.has(s.reserva_id)).map((s) => ({ chave: `r:${s.reserva_id}`, data: s.data, valor: s.valor })),
+    ...contaSaldos.filter((s) => daConta.has(s.conta_externa_id)).map((s) => ({ chave: `c:${s.conta_externa_id}`, data: s.data, valor: s.valor })),
+  ].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
+  // Começa quando todas as fontes já têm histórico; antes disso, o total pularia
+  // só porque uma fonte entrou no histórico (e não porque o dinheiro mudou).
+  const primeira = new Map<string, string>();
+  for (const p of pontos) if (!primeira.has(p.chave)) primeira.set(p.chave, p.data);
+  const inicio = [...primeira.values()].sort().at(-1) ?? "";
+  const atual = new Map<string, number>();
+  for (const p of pontos) if (p.data < inicio) atual.set(p.chave, p.valor);
+  const datas = [...new Set(pontos.map((p) => p.data))].filter((d) => d >= inicio);
+  return datas.map((data) => {
+    for (const p of pontos) if (p.data === data) atual.set(p.chave, p.valor);
+    let c = 0;
+    let r = 0;
+    for (const [k, v] of atual) if (k.startsWith("c:")) c += v;
+    else r += v;
+    return { data, contas: c, reservas: r, total: c + r };
+  });
+}
+
 export interface ContaGuardada {
   id: string;
   nome: string;

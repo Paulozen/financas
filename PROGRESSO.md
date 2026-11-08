@@ -92,3 +92,15 @@ Integração feita em 6 etapas (detalhes em `DECISOES.md`): reconhecimento da AP
 - [x] Tela de Análises (mês/trimestre/ano) com "Vale sua atenção" e "Ver como foi calculado"
 - [x] Categorias com ícone, limite mensal e essencial (migração 007), tela em grade
 - [x] Testes das análises (8)
+
+## Ideias do Securo
+
+- [x] Metas nas reservas (valor, data, situação, ritmo e previsão) e metas no Painel (migração 008)
+- [x] Patrimônio líquido e evolução do total guardado (histórico diário das contas)
+- [x] Fluxo de caixa dia a dia (menor saldo e dia em que fica negativo)
+- [x] Gastos sem categoria: aviso no Painel e tela Categorizar com regra aprendida
+- [x] Pacote de regras de lojas brasileiras
+- [x] Lançamentos: busca, calendário do mês e exportar CSV
+- [x] Categorias: sugerir limites e resumo do orçamento
+- [x] Análises: tendência por categoria e mapa do dinheiro
+- [x] "Tudo em dia!" e variação por categoria contra o mês anterior

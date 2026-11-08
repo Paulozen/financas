@@ -1,10 +1,25 @@
 "use client";
 
 import clsx from "clsx";
-import { AlertTriangle, ArrowDownLeft, ArrowUpRight, ChartPie, ChevronRight, Eye, EyeOff, Inbox, PiggyBank, Trophy, Wallet } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ChartPie,
+  CheckCircle2,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Inbox,
+  PiggyBank,
+  Tags,
+  Target,
+  Trophy,
+  Wallet,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { daVisao, useApp, useCarregar } from "@/components/app-contexto";
 import { ListaAvisos } from "@/components/avisos";
 import { Cabecalho, SeletorMes, SeletorVisaoFaixa } from "@/components/cabecalho";
@@ -15,16 +30,18 @@ import { periodoDe, relatorio, ritmoDoMes, type Aviso, type Gasto, type Ritmo } 
 import { carregarBaseGastos, gastosDaVisao } from "@/lib/analises-dados";
 import { ehEssencial, IconeCategoria } from "@/lib/categorias-visual";
 import { resumoContrato, resumoDivida } from "@/lib/compromissos";
-import { hojeISO, mesDe, nomeMesCurto, somarMeses } from "@/lib/datas";
+import { formatarData, formatarDiaMes, hojeISO, mesDe, nomeMesCurto, somarMeses } from "@/lib/datas";
+import { fluxoDiario, type FluxoDiario } from "@/lib/fluxo";
 import { buscarTodos } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
 import { reaisCurto, useCoresGrafico } from "@/lib/graficos";
+import { resumoMeta, ROTULO_SITUACAO } from "@/lib/metas";
 import { alternarOcultar, useOcultar } from "@/lib/ocultar";
 import { projecao, saldoEmConta, sobraDoMes, valorConta, vencimentos, type MesProjecao } from "@/lib/painel";
 import { avisosConexao, COMO_RENOVAR, type EstadoItem } from "@/lib/pluggy/conexoes";
 import { resumoProjeto } from "@/lib/projetos";
 import { saldoRacha } from "@/lib/racha";
-import { resumoGuardado } from "@/lib/reservas";
+import { resumoGuardado, saldoAtual } from "@/lib/reservas";
 import type { Contrato, Divida, Ocorrencia, Projeto, ProjetoItem, RachaMovimento, Reserva, ReservaSaldo } from "@/lib/tipos";
 
 export default function Painel() {
@@ -70,6 +87,7 @@ export default function Painel() {
     casa.saldo_conta !== null && casa.saldo_conta_data ? { valor: casa.saldo_conta, data: casa.saldo_conta_data } : null,
   );
   const proj = projecao(ocorrencias, hoje, saldoHoje);
+  const fluxo = saldoHoje ? fluxoDiario(ocorrencias, saldoHoje, hoje) : null;
   const venc = vencimentos(ocorrencias, hoje);
   const avisosBancos = avisosConexao(dados.itensBancos, hoje);
   const guardado = resumoGuardado(dados.reservas, dados.saldos, dados.base.contasExternas, visao);
@@ -84,6 +102,26 @@ export default function Painel() {
     ehEssencial,
   });
   const ritmo = ritmoDoMes(porDia, mes, hoje);
+  const semCategoria = gastos.filter((g) => g.mes === mes && g.semCategoria);
+  const metas = daVisao(dados.reservas, visao)
+    .filter((r) => r.ativa && r.meta_valor)
+    .map((r) => {
+      const historico = dados.saldos.filter((s) => s.reserva_id === r.id);
+      return {
+        reserva: r,
+        resumo: resumoMeta({
+          saldo: saldoAtual(r.id, dados.saldos)?.valor ?? 0,
+          meta: r.meta_valor!,
+          data: r.meta_data ?? null,
+          inicio: historico[0]?.data ?? hoje,
+          historico,
+          hoje,
+        }),
+      };
+    })
+    .sort((a, b) => a.resumo.progresso - b.resumo.progresso)
+    .slice(0, 3);
+  const tudoEmDia = !semNada && venc.atrasados.length === 0 && dados.pendentesCaixa === 0 && semCategoria.length === 0;
 
   const progresso = [
     ...daVisao(dados.contratos, visao).map((c) => {
@@ -159,6 +197,26 @@ export default function Painel() {
       )}
       <Erro mensagem={erro} />
 
+      {tudoEmDia && (
+        <p className="mt-4 flex items-center gap-2 rounded-3xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+          <CheckCircle2 className="size-5 shrink-0" aria-hidden /> Tudo em dia! Nada atrasado, nada para revisar.
+        </p>
+      )}
+      {semCategoria.length > 0 && (
+        <Link
+          href="/categorizar"
+          className="mt-4 flex items-center gap-3 rounded-3xl bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <Tags className="size-5 shrink-0" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <strong>{semCategoria.length}</strong> {semCategoria.length === 1 ? "gasto sem categoria" : "gastos sem categoria"} (
+            <span className="valor-oculto">{formatarReais(semCategoria.reduce((s, g) => s + g.valor, 0))}</span>) — ficam fora dos limites e das
+            análises.
+          </span>
+          <span className="shrink-0 font-semibold">Categorizar</span>
+        </Link>
+      )}
+
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
         {semNada && (
           <div className="lg:col-span-2">
@@ -208,6 +266,63 @@ export default function Painel() {
         <div className="flex min-w-0 flex-col gap-4">
           <CartaoCategorias ocorrencias={ocorrencias} gastos={gastos} mes={mes} />
 
+          {metas.length > 0 && (
+            <Cartao>
+              <Titulo
+                acao={
+                  <Link href="/reservas" className="flex items-center text-sm font-medium text-marca-600 dark:text-marca-400">
+                    Reservas <ChevronRight className="size-4" aria-hidden />
+                  </Link>
+                }
+              >
+                Metas
+              </Titulo>
+              <ul className="flex flex-col gap-4">
+                {metas.map(({ reserva, resumo }) => (
+                  <li key={reserva.id} className="flex items-center gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[0.9rem] bg-marca-50 text-marca-600 dark:bg-marca-950/60 dark:text-marca-300">
+                      <Target className="size-5" aria-hidden />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex justify-between gap-2 text-sm">
+                        <span className="truncate font-semibold">{reserva.nome}</span>
+                        <span className="shrink-0 text-xs text-slate-500">
+                          <span className="valor-oculto">{formatarReais(resumo.saldo)}</span> /{" "}
+                          <span className="valor-oculto">{formatarReais(resumo.meta)}</span>
+                        </span>
+                      </div>
+                      <div className="mt-1.5">
+                        <Barra valor={resumo.saldo} total={resumo.meta} />
+                      </div>
+                      <p className="mt-1 flex justify-between gap-2 text-[11px] text-slate-500">
+                        <span>
+                          {Math.floor(resumo.progresso * 100)}%
+                          {resumo.porMes !== null && (
+                            <>
+                              {" · "}
+                              <span className="valor-oculto">{formatarReais(resumo.porMes)}</span>/mês
+                            </>
+                          )}
+                          {reserva.meta_data && ` · até ${formatarData(reserva.meta_data)}`}
+                        </span>
+                        <span
+                          className={clsx(
+                            "font-semibold",
+                            resumo.situacao === "atrasada" || resumo.situacao === "vencida"
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-marca-600 dark:text-marca-400",
+                          )}
+                        >
+                          {ROTULO_SITUACAO[resumo.situacao]}
+                        </span>
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Cartao>
+          )}
+
           {progresso.length > 0 && (
             <Cartao>
               <Titulo>Progresso</Titulo>
@@ -232,8 +347,8 @@ export default function Painel() {
         </div>
 
         <Cartao className="lg:col-span-2">
-          <Titulo>Projeção (12 meses)</Titulo>
-          <GraficoProjecao dados={proj} />
+          <Titulo>Projeção</Titulo>
+          <Projecao proj={proj} fluxo={fluxo} />
           {proj.some((p) => p.sobra < 0) && (
             <p className="mt-2 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
               <AlertTriangle className="size-3.5" aria-hidden /> Meses em vermelho fecham no negativo.
@@ -385,8 +500,11 @@ function CartaoCategorias({ ocorrencias, gastos, mes }: { ocorrencias: Ocorrenci
   const [tipo, setTipo] = useState<"saida" | "entrada">("saida");
   const [sel, setSel] = useState<string | null>(null);
   const mapa = new Map<string | null, number>();
+  const anterior = new Map<string | null, number>();
+  const mesAnt = somarMeses(mes, -1);
   if (tipo === "saida") {
     for (const g of gastos) if (g.mes === mes) mapa.set(g.categoria_id, (mapa.get(g.categoria_id) ?? 0) + g.valor);
+    for (const g of gastos) if (g.mes === mesAnt) anterior.set(g.categoria_id, (anterior.get(g.categoria_id) ?? 0) + g.valor);
   } else {
     for (const o of ocorrencias)
       if (o.tipo === "entrada" && o.status !== "cancelado" && mesDe(o.vencimento) === mes)
@@ -394,7 +512,7 @@ function CartaoCategorias({ ocorrencias, gastos, mes }: { ocorrencias: Ocorrenci
   }
   const linhas = [...mapa.entries()]
     .filter(([, v]) => v > 0)
-    .map(([id, valor]) => ({ id: id ?? "sem", cat: categorias.find((c) => c.id === id), valor }))
+    .map(([id, valor]) => ({ id: id ?? "sem", cat: categorias.find((c) => c.id === id), valor, antes: anterior.get(id) ?? 0 }))
     .sort((a, b) => b.valor - a.valor);
   const total = linhas.reduce((s, l) => s + l.valor, 0);
   const fatias = linhas.map((l) => ({ id: l.id, nome: l.cat?.nome ?? "Sem categoria", valor: l.valor, cor: l.cat?.cor ?? "#94a3b8" }));
@@ -447,7 +565,23 @@ function CartaoCategorias({ ocorrencias, gastos, mes }: { ocorrencias: Ocorrenci
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline justify-between gap-2">
                         <span className="truncate text-sm font-semibold">{l.cat?.nome ?? "Sem categoria"}</span>
-                        <Dinheiro valor={l.valor} className="text-sm font-bold" />
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          {l.antes > 0 && Math.abs(l.valor / l.antes - 1) >= 0.05 && (
+                            <span
+                              className={clsx(
+                                "rounded-full px-1.5 text-[10px] font-semibold",
+                                l.valor > l.antes
+                                  ? "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                                  : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+                              )}
+                              title="Comparado com o mês anterior"
+                            >
+                              {l.valor > l.antes ? "↑" : "↓"}
+                              {Math.min(999, Math.round(Math.abs(l.valor / l.antes - 1) * 100))}%
+                            </span>
+                          )}
+                          <Dinheiro valor={l.valor} className="text-sm font-bold" />
+                        </span>
                       </span>
                       <span className="mt-1.5 flex items-center gap-2">
                         <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -573,6 +707,76 @@ function CartaoAvisos({ avisos, total }: { avisos: Aviso[]; total: number }) {
       </Titulo>
       <ListaAvisos avisos={avisos} />
     </Cartao>
+  );
+}
+
+/** Projeção: 12 meses (sobra por mês) ou próximos 60 dias (saldo em conta dia a dia). */
+function Projecao({ proj, fluxo }: { proj: MesProjecao[]; fluxo: FluxoDiario | null }) {
+  const [modo, setModo] = useState<"meses" | "dias">("meses");
+  return (
+    <>
+      {fluxo && (
+        <div className="max-w-sm">
+          <Abas
+            abas={[
+              { valor: "meses", rotulo: "12 meses" },
+              { valor: "dias", rotulo: "Próximos 60 dias" },
+            ]}
+            atual={modo}
+            aoMudar={setModo}
+          />
+        </div>
+      )}
+      {modo === "dias" && fluxo ? <FluxoDia fluxo={fluxo} /> : <GraficoProjecao dados={proj} />}
+      {fluxo && (
+        <p
+          className={clsx(
+            "mt-2 flex flex-wrap items-center gap-1 rounded-2xl px-3 py-2 text-xs",
+            fluxo.negativoEm ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300" : "bg-slate-50 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300",
+          )}
+        >
+          {fluxo.negativoEm && <AlertTriangle className="size-3.5" aria-hidden />}
+          {fluxo.negativoEm ? <>A conta fica no negativo em {formatarData(fluxo.negativoEm)}. </> : null}
+          Menor saldo nos próximos 60 dias: <strong className="valor-oculto">{formatarReais(fluxo.menor.saldo)}</strong> em{" "}
+          {formatarDiaMes(fluxo.menor.data)}.
+        </p>
+      )}
+    </>
+  );
+}
+
+function FluxoDia({ fluxo }: { fluxo: FluxoDiario }) {
+  const cores = useCoresGrafico();
+  return (
+    <div className="h-56 lg:h-72" role="img" aria-label="Saldo em conta previsto dia a dia nos próximos 60 dias">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={fluxo.dias} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="fluxo-area" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={cores.positivo} stopOpacity={0.22} />
+              <stop offset="100%" stopColor={cores.positivo} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke={cores.grade} vertical={false} strokeDasharray="3 3" />
+          <XAxis
+            dataKey="data"
+            tickFormatter={(d: string) => formatarDiaMes(d)}
+            tick={{ fill: cores.textoSecundario, fontSize: 11 }}
+            stroke={cores.grade}
+            tickLine={false}
+            minTickGap={20}
+          />
+          <YAxis tickFormatter={reaisCurto} tick={{ fill: cores.textoSecundario, fontSize: 11 }} stroke="transparent" width={56} />
+          <ReferenceLine y={0} stroke={cores.negativo} strokeDasharray="4 4" />
+          <Tooltip
+            labelFormatter={(d) => formatarData(String(d))}
+            formatter={(v, nome) => [formatarReais(Number(v)), nome === "saldo" ? "Saldo previsto" : nome === "entradas" ? "Entradas" : "Saídas"]}
+            contentStyle={{ background: cores.superficie, borderColor: cores.grade, borderRadius: 12, color: cores.texto, fontSize: 12 }}
+          />
+          <Area type="stepAfter" dataKey="saldo" stroke={cores.positivo} strokeWidth={2} fill="url(#fluxo-area)" dot={false} isAnimationActive={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 

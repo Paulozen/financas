@@ -1,12 +1,14 @@
 // Passos depois de baixar os dados da Pluggy (roda no servidor, com a sessão do usuário):
 // 1. faturas do banco -> ocorrências de fatura do cartão vinculado (valor e vencimento);
 // 2. faturas futuras -> previsão (parcelas conhecidas + média à vista);
-// 3. compras do cartão sem categoria -> categoria sugerida (regra aprendida ou Pluggy);
-// 4. investimentos -> reservas automáticas (dono + banco + tipo) e saldo do dia no histórico.
+// 3. compras do cartão sem categoria -> categoria sugerida (regra aprendida, pacote de lojas ou Pluggy);
+// 4. investimentos -> reservas automáticas (dono + banco + tipo) e saldo do dia no histórico;
+// 5. saldo do dia de cada conta corrente no histórico (evolução do patrimônio).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mesDe } from "../datas";
 import { padraoDe } from "../importacao/sugestao";
 import { previsaoFaturas, type CompraCartao } from "./cartao";
+import { categoriaDoPacote } from "../pacote-regras";
 import { categoriaDaPluggy } from "./categorias";
 import { chaveGrupo, contaNoTotal, nomeGrupo, saldoPorReserva, type InvestimentoGrupo } from "./grupos";
 
@@ -38,6 +40,23 @@ export async function aposSincronizar(sb: SupabaseClient, casaId: string, hoje: 
   await atualizarFaturas(sb, casaId, hoje);
   await categorizarComprasDeCartao(sb, casaId);
   await atualizarReservas(sb, casaId, hoje);
+  await gravarSaldosContas(sb, casaId, hoje);
+}
+
+/** Um ponto por dia e por conta corrente no histórico de saldos. */
+async function gravarSaldosContas(sb: SupabaseClient, casaId: string, hoje: string) {
+  const contas = checar(
+    await sb.from("contas_externas").select("id, saldo").eq("casa_id", casaId).eq("tipo", "BANK").not("saldo", "is", null),
+  ) as { id: string; saldo: number }[];
+  if (!contas.length) return;
+  checar(
+    await sb
+      .from("conta_saldos")
+      .upsert(
+        contas.map((c) => ({ casa_id: casaId, conta_externa_id: c.id, data: hoje, valor: c.saldo })),
+        { onConflict: "conta_externa_id,data" },
+      ),
+  );
 }
 
 async function atualizarFaturas(sb: SupabaseClient, casaId: string, hoje: string) {
@@ -105,6 +124,7 @@ async function categorizarComprasDeCartao(sb: SupabaseClient, casaId: string) {
     if (t.valor <= 0) continue; // pagamentos e estornos não ganham categoria de gasto
     const cat =
       porRegra.get(padraoDe(t)) ??
+      categoriaDoPacote(t.descricao, categorias as { id: string; nome: string; tipo: string; ativa: boolean }[]) ??
       categoriaDaPluggy(t.categoria_pluggy, "saida", categorias as { id: string; nome: string; tipo: string; ativa: boolean }[]);
     if (cat) grupos.set(cat, [...(grupos.get(cat) ?? []), t.id]);
   }

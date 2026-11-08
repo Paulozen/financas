@@ -104,3 +104,5 @@ O app abre em tela cheia, com ícone próprio. Os dados sempre vêm da internet 
 ## Créditos
 
 O visual e as ideias de análises (ritmo de gastos, "Vale sua atenção", limites por categoria) foram inspirados no [Kova](https://github.com/filipembcruz/kova), de Filipe Cruz (licença MIT).
+
+Também trouxemos ideias (sem copiar código) do [Securo](https://github.com/securo-finance/securo): metas nas reservas, fluxo de caixa dia a dia, calendário, pacote de regras, sugestão de limites e o mapa do dinheiro.

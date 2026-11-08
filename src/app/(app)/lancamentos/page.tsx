@@ -1,15 +1,18 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { CalendarDays, Download, List, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { daVisao, useApp, useCarregar } from "@/components/app-contexto";
+import { CalendarioMes } from "@/components/calendario";
 import { Cabecalho, SeletorMes } from "@/components/cabecalho";
 import { FormPontual, FormRecorrencia } from "@/components/form-lancamentos";
 import { LinhaOcorrencia, ModalOcorrencia, ModalPagar, valorEfetivo } from "@/components/ocorrencias";
 import { Abas, Botao, Cartao, Carregando, Dinheiro, Erro, Selecao, Selo, Titulo, Vazio } from "@/components/ui";
 import { formatarData, hojeISO, primeiroDia, ultimoDia } from "@/lib/datas";
+import { baixarArquivo, ocorrenciasCsv } from "@/lib/csv";
 import { buscarTodos } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
+import { semAcentos } from "@/lib/importacao/texto";
 import { contaNaSobra } from "@/lib/painel";
 import type { Ocorrencia, Recorrencia } from "@/lib/tipos";
 
@@ -32,7 +35,9 @@ export default function Lancamentos() {
 }
 
 function DoMes() {
-  const { casa, mes, visao, categorias, membros } = useApp();
+  const { casa, mes, visao, categorias, membros, nomeCategoria, nomeDono } = useApp();
+  const [busca, setBusca] = useState("");
+  const [vista, setVista] = useState<"lista" | "calendario">("lista");
   const [tipo, setTipo] = useState("");
   const [status, setStatus] = useState("");
   const [categoria, setCategoria] = useState("");
@@ -55,13 +60,18 @@ function DoMes() {
   const hoje = hojeISO();
   const lista = useMemo(() => {
     let l = daVisao(dados ?? [], visao);
+    if (busca.trim()) {
+      const b = semAcentos(busca);
+      // Procura na descrição, na observação e no valor ("123,45").
+      l = l.filter((o) => semAcentos(`${o.descricao} ${o.observacao ?? ""} ${formatarReais(o.valor_previsto)}`).includes(b));
+    }
     if (tipo) l = l.filter((o) => o.tipo === tipo);
     if (status === "atrasado") l = l.filter((o) => o.status === "pendente" && o.vencimento < hoje);
     else if (status) l = l.filter((o) => o.status === status);
     if (categoria) l = l.filter((o) => (categoria === "-" ? !o.categoria_id : o.categoria_id === categoria));
     if (dono) l = l.filter((o) => (dono === "casal" ? !o.dono_membro_id : o.dono_membro_id === dono));
     return l;
-  }, [dados, visao, tipo, status, categoria, dono, hoje]);
+  }, [dados, visao, busca, tipo, status, categoria, dono, hoje]);
 
   // Mesma regra da sobra: canceladas e pagas com dinheiro guardado ficam fora dos totais.
   const ativos = lista.filter(contaNaSobra);
@@ -94,6 +104,17 @@ function DoMes() {
           </p>
         </Cartao>
 
+        <label className="relative mb-3 block">
+          <span className="sr-only">Buscar</span>
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
+          <input
+            type="search"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar descrição, observação ou valor"
+            className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white pr-3 pl-9 text-base outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/25 dark:border-slate-700 dark:bg-slate-900"
+          />
+        </label>
         <details className="mb-4" open={filtrosAbertos}>
           <summary className="cursor-pointer text-sm font-medium text-slate-600 dark:text-slate-400">Filtros</summary>
           <div className="mt-2 grid grid-cols-2 gap-3">
@@ -137,7 +158,41 @@ function DoMes() {
         </details>
       </div>
 
-      <div>
+      <div className="min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div role="tablist" aria-label="Visualização" className="flex gap-1 rounded-2xl bg-slate-200/70 p-1 dark:bg-slate-800/80">
+            {(
+              [
+                ["lista", "Lista", List],
+                ["calendario", "Calendário", CalendarDays],
+              ] as const
+            ).map(([v, r, Icone]) => (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                aria-selected={vista === v}
+                onClick={() => setVista(v)}
+                className={
+                  vista === v
+                    ? "flex min-h-9 items-center gap-1.5 rounded-xl bg-white px-3 text-sm font-semibold shadow-sm dark:bg-slate-950"
+                    : "flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-slate-500"
+                }
+              >
+                <Icone className="size-4" aria-hidden /> {r}
+              </button>
+            ))}
+          </div>
+          <Botao
+            variante="fantasma"
+            className="!min-h-9 !px-3"
+            disabled={!lista.length}
+            onClick={() => baixarArquivo(`lancamentos-${mes}.csv`, ocorrenciasCsv(lista, nomeCategoria, nomeDono))}
+            title="Baixar os lançamentos filtrados em CSV (abre no Excel)"
+          >
+            <Download className="size-4" aria-hidden /> CSV
+          </Botao>
+        </div>
         <Erro mensagem={erro} />
         {carregando && !dados ? (
           <Carregando />
@@ -146,6 +201,10 @@ function DoMes() {
             titulo="Nada neste mês"
             texto="Cadastre seu salário e as contas fixas na aba Recorrentes, ou use o + para um lançamento rápido."
           />
+        ) : vista === "calendario" ? (
+          <Cartao className="mb-20 lg:mb-0">
+            <CalendarioMes mes={mes} ocorrencias={lista} aoAbrir={setAberta} aoPagar={setPagando} />
+          </Cartao>
         ) : (
           <Cartao className="mb-20 lg:mb-0">
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
