@@ -192,7 +192,7 @@ export function Previa({
       <div className="sticky top-0 z-20 mb-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <label className="flex items-center gap-2">
-            <input type="checkbox" className="size-5 accent-emerald-600" checked={todasSelecionadas} onChange={alternarTodas} />
+            <input type="checkbox" className="size-5 accent-marca-600" checked={todasSelecionadas} onChange={alternarTodas} />
             {selecionadas.size ? `${selecionadas.size} selecionadas` : `Selecionar as ${selecionaveis.length} visíveis`}
           </label>
           {selecionadas.size > 0 && (
@@ -271,14 +271,14 @@ export function Previa({
                 className={clsx(
                   "rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900",
                   fora && "opacity-50",
-                  selecionadas.has(l.hash) && "border-emerald-400",
+                  selecionadas.has(l.hash) && "border-marca-400",
                 )}
               >
                 <div className="flex items-start gap-2">
                   <input
                     type="checkbox"
                     aria-label={`Selecionar ${l.t.descricao}`}
-                    className="mt-1 size-5 accent-emerald-600"
+                    className="mt-1 size-5 accent-marca-600"
                     disabled={fora}
                     checked={selecionadas.has(l.hash)}
                     onChange={() =>
@@ -381,7 +381,7 @@ export function Previa({
                           <label className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
                             <input
                               type="checkbox"
-                              className="size-4 accent-emerald-600"
+                              className="size-4 accent-marca-600"
                               checked={!!l.com_reserva}
                               onChange={(e) => alterar(l.hash, { com_reserva: e.target.checked })}
                             />

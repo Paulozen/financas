@@ -35,7 +35,7 @@ export default function Login() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <div className="rounded-2xl bg-emerald-600 p-3 text-white">
+        <div className="rounded-2xl bg-marca-600 p-3 text-white">
           <Wallet className="size-8" aria-hidden />
         </div>
         <h1 className="text-2xl font-bold">Finanças da Casa</h1>

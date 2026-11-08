@@ -44,7 +44,7 @@ export default function Projetos() {
             const r = resumoProjeto(itens, dados!.parcelas);
             return (
               <Link key={p.id} href={`/projetos/${p.id}`}>
-                <Cartao className="hover:border-emerald-400">
+                <Cartao className="hover:border-marca-400">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{p.nome}</p>

@@ -192,7 +192,7 @@ function LinhaConta({
           </select>
         </label>
         <label className="flex items-center gap-1">
-          <input type="checkbox" className="size-4 accent-emerald-600" checked={conta.ativa} onChange={(e) => mudar({ ativa: e.target.checked })} />
+          <input type="checkbox" className="size-4 accent-marca-600" checked={conta.ativa} onChange={(e) => mudar({ ativa: e.target.checked })} />
           Ativa
         </label>
         {credito && (
@@ -216,7 +216,7 @@ function LinhaConta({
               </select>
             </label>
             {!conta.cartao_id && (
-              <Botao variante="fantasma" className="!min-h-9 !px-2 text-emerald-700" onClick={aoCriarCartao}>
+              <Botao variante="fantasma" className="!min-h-9 !px-2 text-marca-700 dark:text-marca-400" onClick={aoCriarCartao}>
                 Criar cartão com esta conta
               </Botao>
             )}

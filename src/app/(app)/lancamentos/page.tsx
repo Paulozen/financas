@@ -160,7 +160,7 @@ function DoMes() {
           type="button"
           onClick={() => setNovo(true)}
           aria-label="Novo lançamento rápido"
-          className="fab fixed right-4 z-30 flex size-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 sm:right-[calc(50%-20rem)] lg:right-8"
+          className="fab fixed right-4 z-30 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-marca-500 to-marca-700 text-white shadow-[0_12px_30px_-6px_rgba(37,84,235,.55)] hover:from-marca-600 hover:to-marca-800 sm:right-[calc(50%-20rem)] lg:right-8"
         >
           <Plus className="size-7" />
         </button>

@@ -72,7 +72,7 @@ function Parcelados() {
             const r = resumoContrato(c, dados!.ocorrencias);
             return (
               <Link key={c.id} href={`/compromissos/parcelado/${c.id}`}>
-                <Cartao className="hover:border-emerald-400">
+                <Cartao className="hover:border-marca-400">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{c.nome}</p>
@@ -129,7 +129,7 @@ function Dividas() {
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {resumos.map(({ d, r }) => (
             <Link key={d.id} href={`/compromissos/divida/${d.id}`}>
-              <Cartao className={r.quitada ? "opacity-70" : "hover:border-emerald-400"}>
+              <Cartao className={r.quitada ? "opacity-70" : "hover:border-marca-400"}>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{d.descricao}</p>
@@ -201,7 +201,7 @@ function Cartoes() {
                   <div className="flex gap-1">
                     <Link
                       href={`/compromissos/cartao/${c.id}`}
-                      className="inline-flex min-h-9 items-center rounded-xl px-2 text-sm font-medium text-emerald-700 hover:bg-slate-200 dark:text-emerald-400 dark:hover:bg-slate-800"
+                      className="inline-flex min-h-9 items-center rounded-xl px-2 text-sm font-medium text-marca-700 hover:bg-slate-200 dark:text-marca-400 dark:hover:bg-slate-800"
                     >
                       Detalhes
                     </Link>

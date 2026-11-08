@@ -16,6 +16,7 @@ import { formatarData, hojeISO } from "@/lib/datas";
 import { checar } from "@/lib/db";
 import { formatarReais } from "@/lib/dinheiro";
 import { supabase } from "@/lib/supabase";
+import { IconeCategoria } from "@/lib/categorias-visual";
 import type { Ocorrencia } from "@/lib/tipos";
 import { useApp } from "./app-contexto";
 import { AreaTexto, Botao, Campo, CampoValor, Dinheiro, Erro, formatarErro, Interruptor, Modal, Selo } from "./ui";
@@ -42,9 +43,10 @@ export function SeloStatus({ o }: { o: Ocorrencia }) {
 }
 
 export function LinhaOcorrencia({ o, aoAbrir, aoPagar }: { o: Ocorrencia; aoAbrir: () => void; aoPagar: () => void }) {
-  const { nomeDono, nomeCategoria } = useApp();
+  const { nomeDono, nomeCategoria, categorias } = useApp();
   return (
-    <li className="flex items-center gap-2 py-2">
+    <li className="flex items-center gap-2 py-2.5 min-[400px]:gap-3">
+      <IconeCategoria categoria={categorias.find((c) => c.id === o.categoria_id)} tamanho="sm" className={clsx("hidden min-[400px]:inline-flex", o.status === "cancelado" && "opacity-50")} />
       <button type="button" onClick={aoAbrir} className="flex min-w-0 flex-1 flex-col items-start text-left">
         <span className={clsx("line-clamp-2 max-w-full font-medium break-words", o.status === "cancelado" && "line-through opacity-60")}>
           {o.descricao}

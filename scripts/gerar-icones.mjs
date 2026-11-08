@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const VERDE = [5, 150, 105];
+const AZUL = [37, 84, 235];
 const BRANCO = [255, 255, 255];
 const OURO = [251, 191, 36];
 const OURO_ESCURO = [217, 119, 6];
@@ -41,7 +41,7 @@ function cor(u, v, maskable) {
   if (moeda <= 0.125 ** 2) return BRANCO;
   if (dentroTriangulo(x, y, [0.5, 0.16], [0.13, 0.48], [0.87, 0.48])) return BRANCO;
   if (x >= 0.24 && x <= 0.76 && y >= 0.44 && y <= 0.82) return BRANCO;
-  return VERDE;
+  return AZUL;
 }
 
 function png(tamanho, maskable) {

@@ -53,7 +53,7 @@ function Revisar() {
         titulo="Nada para revisar"
         texto="As transações das contas correntes conectadas aparecem aqui depois de cada sincronização (a Pluggy atualiza os bancos a cada 24 horas)."
         acao={
-          <Link href="/configuracoes" className="text-sm font-medium text-emerald-600">
+          <Link href="/configuracoes" className="text-sm font-medium text-marca-600 dark:text-marca-400">
             Ver bancos conectados
           </Link>
         }

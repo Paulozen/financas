@@ -138,8 +138,8 @@ export default function Importar() {
           <Cartao className="mb-4">
             <div className="flex flex-col gap-4">
               <SeletorDono rotulo="De quem é este extrato?" valor={dono} aoMudar={setDono} membros={membros} />
-              <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 p-4 text-center hover:border-emerald-500 dark:border-slate-700">
-                <FileUp className="size-8 text-emerald-600" aria-hidden />
+              <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 p-4 text-center hover:border-marca-500 dark:border-slate-700">
+                <FileUp className="size-8 text-marca-600" aria-hidden />
                 <span className="font-medium">{lendo ? "Lendo arquivo..." : "Escolher arquivo"}</span>
                 <span className="text-xs text-slate-500">OFX, CSV ou XLSX</span>
                 <input

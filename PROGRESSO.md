@@ -82,3 +82,13 @@ Integração feita em 6 etapas (detalhes em `DECISOES.md`): reconhecimento da AP
 - Investimentos: o banco da Laura devolve ~170 registros (cada aplicação do cofrinho vira um CDB); só os ativos com saldo aparecem para vincular.
 - O reconhecimento de duplicadas com arquivos é por conta (valor + data quando a conta é a mesma do arquivo). Se um arquivo for importado **depois** de a caixa confirmar o mesmo período, a importação por arquivo não conhece o hash da Pluggy e pode duplicar: prefira a caixa de entrada para períodos já sincronizados.
 - Previsão de fatura futura: no cartão vinculado, o previsto é recalculado a cada sincronização; um ajuste manual vale até a próxima.
+
+## Visual novo e análises (inspirado no Kova)
+
+- [x] Base visual azul (cores, fonte Inter, cartões, abas, barra inferior flutuante, botão "+")
+- [x] Painel com faixa de destaque (total guardado, mês em três números, atalhos) e botão para esconder valores
+- [x] Rosca de gastos por categoria com faturas abertas nas compras
+- [x] Ritmo de gastos (acumulado vs mês anterior, por dia, média)
+- [x] Tela de Análises (mês/trimestre/ano) com "Vale sua atenção" e "Ver como foi calculado"
+- [x] Categorias com ícone, limite mensal e essencial (migração 007), tela em grade
+- [x] Testes das análises (8)

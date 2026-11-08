@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { CalendarClock, FileUp, Home, Inbox, List, LogOut, Menu, PartyPopper, PiggyBank, Settings, Tags, Trophy, Wallet } from "lucide-react";
+import { CalendarClock, ChartPie, FileUp, Home, Inbox, List, LogOut, Menu, PartyPopper, PiggyBank, Settings, Tags, Trophy, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -15,6 +15,7 @@ const principais = [
 ];
 
 const secundarios = [
+  { href: "/analises", rotulo: "Análises", Icone: ChartPie },
   { href: "/caixa", rotulo: "Caixa de entrada", Icone: Inbox },
   { href: "/reservas", rotulo: "Reservas", Icone: PiggyBank },
   { href: "/racha", rotulo: "Caixa do racha", Icone: Trophy },
@@ -38,17 +39,17 @@ export function NavInferior() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-950/95"
+      className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden"
     >
-      <ul className="mx-auto flex max-w-2xl">
+      <ul className="mx-auto flex max-w-2xl gap-1 rounded-[1.75rem] border border-white/70 bg-white/90 p-1.5 shadow-flutuante backdrop-blur-md dark:border-white/10 dark:bg-slate-900/90">
         {itens.map(({ href, rotulo, Icone }) => (
           <li key={href} className="flex-1">
             <Link
               href={href}
               aria-current={ativo(href) ? "page" : undefined}
               className={clsx(
-                "flex min-h-14 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-medium min-[400px]:text-[11px]",
-                ativo(href) ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500",
+                "flex min-h-13 flex-col items-center justify-center gap-0.5 rounded-[1.25rem] px-0.5 text-[10px] font-medium transition-colors min-[400px]:text-[11px]",
+                ativo(href) ? "bg-marca-50 text-marca-700 dark:bg-marca-950/70 dark:text-marca-300" : "text-slate-500 dark:text-slate-400",
               )}
             >
               <Icone className="size-5" aria-hidden />
@@ -73,7 +74,7 @@ export function BarraLateral() {
         className={clsx(
           "flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium",
           ativo(href)
-            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+            ? "bg-marca-50 text-marca-700 dark:bg-marca-950/60 dark:text-marca-300"
             : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
         )}
       >
@@ -83,12 +84,12 @@ export function BarraLateral() {
     </li>
   );
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-slate-200 bg-white px-4 py-6 lg:flex dark:border-slate-800 dark:bg-slate-900">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-slate-200/70 bg-white/80 px-4 py-6 backdrop-blur lg:flex dark:border-slate-800 dark:bg-slate-900/80">
       <div className="mb-8 flex items-center gap-2 px-2">
-        <span className="rounded-xl bg-emerald-600 p-2 text-white">
+        <span className="faixa-destaque rounded-2xl p-2 text-white shadow-md shadow-marca-700/30">
           <Wallet className="size-5" aria-hidden />
         </span>
-        <span className="text-lg font-bold">Finanças da Casa</span>
+        <span className="text-lg font-bold tracking-tight">Finanças da Casa</span>
       </div>
       <nav aria-label="Navegação principal" className="flex flex-1 flex-col gap-6">
         <ul className="flex flex-col gap-1">{principais.map(link)}</ul>

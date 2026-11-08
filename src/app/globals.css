@@ -1,21 +1,77 @@
 @import "tailwindcss";
 
+/*
+ * Visual inspirado no Kova (github.com/filipembcruz/kova, licença MIT):
+ * faixa de destaque em degradê que guarda o dinheiro, folhas claras com o detalhe,
+ * ícones em quadrados arredondados tingidos e números grandes em Inter.
+ */
 @theme inline {
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+}
+
+@theme {
+  /* Cor principal (azul) */
+  --color-marca-50: #eef4ff;
+  --color-marca-100: #dbe6ff;
+  --color-marca-200: #bfd3ff;
+  --color-marca-300: #93b4fd;
+  --color-marca-400: #6090fa;
+  --color-marca-500: #3b6ef6;
+  --color-marca-600: #2554eb;
+  --color-marca-700: #1d42d8;
+  --color-marca-800: #1e37af;
+  --color-marca-900: #1e348a;
+  --color-marca-950: #172154;
+
+  --shadow-folha: 0 1px 2px rgb(15 23 42 / 0.04), 0 10px 30px rgb(30 64 175 / 0.07);
+  --shadow-flutuante: 0 12px 40px -8px rgb(30 64 175 / 0.25);
 }
 
 :root {
   color-scheme: light dark;
+  --fundo: #f3f5fb;
+  --destaque-a: #0b1d5c;
+  --destaque-b: #1d48d8;
+  --destaque-c: #5b8cff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #070a13;
+    --destaque-a: #060d2b;
+    --destaque-b: #142f8f;
+    --destaque-c: #2c5be0;
+  }
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  @apply text-slate-900 dark:text-slate-100;
+  background: var(--fundo);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Números grandes: um pouco mais fechados, como a versão "Display" da Inter. */
+.numero-grande {
+  font-feature-settings: "tnum", "ss01";
+  letter-spacing: -0.03em;
+}
+
+/* Faixa de destaque (topo do Painel) */
+.faixa-destaque {
+  background:
+    radial-gradient(120% 90% at 100% 0%, var(--destaque-c) 0%, transparent 55%),
+    linear-gradient(160deg, var(--destaque-a) 0%, var(--destaque-b) 100%);
+}
+
+/* Valores escondidos (botão do olho) */
+[data-ocultar="1"] .valor-oculto {
+  filter: blur(7px);
+  user-select: none;
 }
 
 /* Botão flutuante acima da barra inferior */
 .fab {
-  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  bottom: calc(6.25rem + env(safe-area-inset-bottom));
 }
 
 /* No computador não há barra inferior */

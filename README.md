@@ -100,3 +100,7 @@ O app abre em tela cheia, com ícone próprio. Os dados sempre vêm da internet 
 - `src/lib/importacao/` — leitura de OFX/CSV/XLSX, perfis de banco, sugestões e deduplicação.
 - `supabase/migrations/` — esquema, RLS e funções.
 - `DECISOES.md` — decisões tomadas durante a construção. `PROGRESSO.md` — o que foi feito, roteiro de testes e pendências.
+
+## Créditos
+
+O visual e as ideias de análises (ritmo de gastos, "Vale sua atenção", limites por categoria) foram inspirados no [Kova](https://github.com/filipembcruz/kova), de Filipe Cruz (licença MIT).

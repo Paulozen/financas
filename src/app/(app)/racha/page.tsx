@@ -31,7 +31,7 @@ export default function Racha() {
           titulo="Módulo desativado"
           texto="O caixa do racha controla o dinheiro dos jogadores (fora das finanças do casal). Ative em Configurações."
           acao={
-            <Link href="/configuracoes" className="text-sm font-medium text-emerald-600">
+            <Link href="/configuracoes" className="text-sm font-medium text-marca-600 dark:text-marca-400">
               Ir para Configurações
             </Link>
           }

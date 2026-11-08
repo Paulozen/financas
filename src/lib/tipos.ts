@@ -40,6 +40,12 @@ export interface Categoria {
   cor: string;
   ativa: boolean;
   ordem: number;
+  /** chave do ícone (null = escolhido pelo nome) */
+  icone?: string | null;
+  /** limite mensal em centavos (orçamento da categoria) */
+  limite_mensal?: number | null;
+  /** gasto essencial? null = decidido pelo nome */
+  essencial?: boolean | null;
 }
 
 export interface Recorrencia {

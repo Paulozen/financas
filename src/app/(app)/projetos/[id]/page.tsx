@@ -116,7 +116,7 @@ export default function DetalheProjeto() {
                   <button
                     type="button"
                     onClick={() => setEditando(true)}
-                    className="text-left text-sm text-emerald-700 underline dark:text-emerald-400"
+                    className="text-left text-sm text-marca-700 underline dark:text-marca-400"
                   >
                     Defina o orçamento
                   </button>
