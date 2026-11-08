@@ -1,6 +1,6 @@
 "use client";
 
-import { ChartPie, ChevronRight, Tag, FileUp, Inbox, LogOut, PiggyBank, Settings, Tags, Trophy } from "lucide-react";
+import { ChartPie, ChevronRight, Tag, Wand2, FileUp, Inbox, LogOut, PiggyBank, Settings, Tags, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/components/app-contexto";
 import { Cabecalho } from "@/components/cabecalho";
@@ -14,6 +14,7 @@ const links = [
   { href: "/importar", rotulo: "Importar extrato", Icone: FileUp },
   { href: "/categorias", rotulo: "Categorias", Icone: Tags },
   { href: "/categorizar", rotulo: "Gastos sem categoria", Icone: Tag },
+  { href: "/regras", rotulo: "Regras de categorização", Icone: Wand2 },
   { href: "/configuracoes", rotulo: "Configurações", Icone: Settings },
 ];
 

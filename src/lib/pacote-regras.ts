@@ -21,6 +21,13 @@ const PACOTE: [RegExp, string[]][] = [
   [/\b(udemy|alura|coursera|duolingo|escola|faculdade|colegio|livraria|saraiva|curso)\b/, ["Educação", "Outros"]],
   [/\b(salao|barbearia|barber|cabeleireiro|estetica|manicure|boticario|natura|sephora|o boticario)\b/, ["Beleza", "Compras", "Outros"]],
   [/\b(iof|anuidade|tarifa|juros|encargos|multa)\b/, ["Tarifas", "Dívidas", "Outros"]],
+  // Do pacote "Brasil" do Securo:
+  [/\b(estacionamento|pedagio|sem parar)\b/, ["Transporte", "Carro"]],
+  [/\b(iptu|ipva|imposto|darf|dae|licenciamento)\b/, ["Impostos", "Contas da casa", "Outros"]],
+  [/\b(dizimo|doacao|caridade|oferta)\b/, ["Doações", "Igreja", "Outros"]],
+  [/\b(condominio)\b/, ["Moradia", "Contas da casa"]],
+  [/\b(aluguel)\b/, ["Moradia"]],
+  [/\b(universidade)\b/, ["Educação", "Outros"]],
 ];
 
 type Cat = { id: string; nome: string; tipo: string; ativa: boolean };

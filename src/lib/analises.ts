@@ -44,8 +44,12 @@ export interface Gasto {
  */
 export function gastosDetalhados(ocorrencias: Ocorrencia[], compras: CompraDoCartao[], cartaoDaRegra: Map<string, string>): Gasto[] {
   const comprasPorFatura = new Map<string, CompraDoCartao[]>();
+  // Estorno sem categoria herda a da compra com a mesma descrição.
+  const categoriaPorDescricao = new Map<string, string>();
+  for (const c of compras) if (c.valor > 0 && c.categoria_id) categoriaPorDescricao.set(normalizarDescricao(c.descricao), c.categoria_id);
   for (const c of compras) {
-    if (!c.fatura_mes || c.valor <= 0 || ehPagamentoDeFatura(c)) continue;
+    // Estornos (valor negativo que não é pagamento da fatura) descontam da categoria.
+    if (!c.fatura_mes || c.valor === 0 || ehPagamentoDeFatura(c)) continue;
     const k = `${c.cartao_id}|${c.fatura_mes}`;
     comprasPorFatura.set(k, [...(comprasPorFatura.get(k) ?? []), c]);
   }
@@ -66,12 +70,12 @@ export function gastosDetalhados(ocorrencias: Ocorrencia[], compras: CompraDoCar
           mes,
           descricao: c.descricao,
           valor: c.valor,
-          categoria_id: c.categoria_id ?? o.categoria_id,
+          categoria_id: c.categoria_id ?? (c.valor < 0 ? categoriaPorDescricao.get(normalizarDescricao(c.descricao)) : undefined) ?? o.categoria_id,
           origem: "cartao",
           cadastrada: false,
           parcelada: ehParcelada(c),
           realizado: true,
-          semCategoria: !c.categoria_id,
+          semCategoria: !c.categoria_id && c.valor > 0,
           ref: c.id ?? "",
         });
       }

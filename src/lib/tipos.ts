@@ -170,6 +170,9 @@ export interface Reserva {
   /** meta (centavos) e data alvo */
   meta_valor?: number | null;
   meta_data?: string | null;
+  /** ponto de partida da meta */
+  meta_desde?: string | null;
+  meta_inicial?: number | null;
 }
 
 export interface ReservaSaldo {

@@ -147,6 +147,7 @@ export default function Reservas() {
                       inicio: historicoR[0]?.data ?? hoje,
                       historico: historicoR,
                       hoje,
+                      base: r.meta_desde ? { desde: r.meta_desde, inicial: r.meta_inicial ?? 0 } : null,
                     })
                   : null;
                 return (
@@ -441,6 +442,11 @@ function FormReserva({
         ativa,
         meta_valor: metaValor > 0 ? metaValor : null,
         meta_data: metaValor > 0 && metaData ? metaData : null,
+        // Ponto de partida: quando a meta (valor ou data) foi definida e quanto já havia.
+        ...(metaValor > 0 && (metaValor !== (reserva?.meta_valor ?? 0) || (metaData || null) !== (reserva?.meta_data ?? null) || !reserva?.meta_desde)
+          ? { meta_desde: hojeISO(), meta_inicial: reserva ? (saldoAtual(reserva.id, saldos)?.valor ?? 0) : saldoInicial }
+          : {}),
+        ...(metaValor > 0 ? {} : { meta_desde: null, meta_inicial: null }),
       };
       const sb = supabase();
       let reservaId = reserva?.id;

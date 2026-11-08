@@ -35,6 +35,17 @@ describe("resumoMeta", () => {
   });
 });
 
+describe("resumoMeta com ponto de partida (fórmula do Securo)", () => {
+  const b = { meta: 1000000, data: "2027-01-01", inicio: "2026-01-01", historico: [], hoje: "2026-07-02" };
+  const base = { desde: "2026-01-01", inicial: 400000 };
+  it("mede o progresso a partir do que havia quando a meta foi definida", () => {
+    // precisa 600 mil em 365 dias; passados ~182 dias espera ~299 mil a mais
+    expect(resumoMeta({ ...b, saldo: 700000, base }).situacao).toBe("no_ritmo");
+    expect(resumoMeta({ ...b, saldo: 800000, base }).situacao).toBe("adiantada");
+    expect(resumoMeta({ ...b, saldo: 550000, base }).situacao).toBe("atrasada");
+  });
+});
+
 describe("pacote de regras", () => {
   const cats = [
     { id: "a", nome: "Alimentação", tipo: "saida", ativa: true },

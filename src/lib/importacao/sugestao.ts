@@ -66,8 +66,22 @@ export function candidatas(t: TransacaoExtrato, pendentes: Ocorrencia[]): Ocorre
     .sort(
       (a, b) =>
         Math.abs(a.valor_previsto - valor) - Math.abs(b.valor_previsto - valor) ||
+        semelhanca(b.descricao, t.descricao) - semelhanca(a.descricao, t.descricao) ||
         Math.abs(difDias(a.vencimento, t.data)) - Math.abs(difDias(b.vencimento, t.data)),
     );
+}
+
+/**
+ * Semelhança de descrições (token_overlap do Securo): palavras em comum sobre o lado
+ * com mais palavras. 0 = nada em comum, 1 = mesmas palavras.
+ */
+export function semelhanca(a: string | null | undefined, b: string | null | undefined): number {
+  const pa = new Set(normalizarDescricao(a ?? "").split(" ").filter(Boolean));
+  const pb = new Set(normalizarDescricao(b ?? "").split(" ").filter(Boolean));
+  if (!pa.size || !pb.size) return 0;
+  let comum = 0;
+  for (const p of pa) if (pb.has(p)) comum++;
+  return comum / Math.max(pa.size, pb.size);
 }
 
 export interface ContextoSugestao {

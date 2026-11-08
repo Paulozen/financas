@@ -116,6 +116,7 @@ export default function Painel() {
           inicio: historico[0]?.data ?? hoje,
           historico,
           hoje,
+          base: r.meta_desde ? { desde: r.meta_desde, inicial: r.meta_inicial ?? 0 } : null,
         }),
       };
     })

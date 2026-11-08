@@ -3,6 +3,8 @@
 // Caixa de entrada do Open Finance: transações de conta corrente "a revisar".
 // Reaproveita as sugestões e a confirmação da importação por arquivo.
 import { categoriaDoPacote } from "./pacote-regras";
+import { aplicarRegras, type Regra } from "./regras";
+import { paresDeTransferencia } from "./transferencias";
 import type { LinhaPrevia } from "@/components/importar/previa";
 import { somarDias } from "./datas";
 import { buscarTodos, checar } from "./db";
@@ -51,10 +53,11 @@ export const hashPluggy = (pluggyId: string) => `pluggy:${pluggyId}`;
 
 /** Monta as linhas da caixa de entrada com as sugestões já preenchidas. */
 export async function carregarCaixa(casa: Casa, categorias: Categoria[]): Promise<{ linhas: LinhaCaixa[]; pendentes: Ocorrencia[] }> {
-  const [externas, contas, regras] = await Promise.all([
+  const [externas, contas, regras, regrasCasal] = await Promise.all([
     buscarTodos<TransacaoExterna>("transacoes_externas", casa.id, (q) => q.eq("situacao", "pendente"), "data"),
     buscarTodos<ContaExterna>("contas_externas", casa.id),
     buscarTodos<RegraAprendida>("regras_importacao", casa.id),
+    buscarTodos<Regra>("regras", casa.id, (q) => q.eq("ativa", true)),
   ]);
   const ativas = new Map(contas.filter((c) => c.ativa && c.tipo === "BANK").map((c) => [c.id, c]));
   const lista = externas.filter((t) => ativas.has(t.conta_externa_id)).sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0));
@@ -67,6 +70,24 @@ export async function carregarCaixa(casa: Casa, categorias: Categoria[]): Promis
       .gte("vencimento", somarDias(datas[0], -10))
       .lte("vencimento", somarDias(datas.at(-1)!, 10)),
   );
+
+  // Transferências entre contas de vocês: a outra perna pode já ter sido revisada,
+  // então entram todas as transações de conta corrente do período (±2 dias).
+  const vizinhas = await buscarTodos<TransacaoExterna>("transacoes_externas", casa.id, (q) =>
+    q
+      .neq("situacao", "cartao")
+      .gte("data", somarDias(datas[0], -2))
+      .lte("data", somarDias(datas.at(-1)!, 2)),
+  );
+  const nomeConta = (id: string) => ativas.get(id)?.nome ?? "";
+  const transferencias = paresDeTransferencia(
+    vizinhas
+      .filter((t) => ativas.has(t.conta_externa_id))
+      .map((t) => ({ id: t.id, conta_id: t.conta_externa_id, data: t.data, valor: t.valor, descricao: t.descricao })),
+    nomeConta,
+  );
+  const porId = new Map(vizinhas.map((t) => [t.id, t]));
+  const categoriasValidas = new Set(categorias.filter((c) => c.ativa).map((c) => c.id));
 
   const usados = new Set<string>();
   const linhas = lista.map((externa, indice): LinhaCaixa => {
@@ -83,7 +104,29 @@ export async function carregarCaixa(casa: Casa, categorias: Categoria[]): Promis
       casa.racha_ativo && casa.racha_membro_id && conta?.dono_membro_id === casa.racha_membro_id
         ? { mensalidade: casa.racha_mensalidade, diaria: casa.racha_diaria }
         : null;
-    const s = sugerir(t, { regras, pendentes: pendentes.filter((p) => !usados.has(p.id)), racha });
+    const padrao = padraoDe(t);
+    let s = sugerir(t, { regras, pendentes: pendentes.filter((p) => !usados.has(p.id)), racha });
+    if (s.motivo !== "regra aprendida") {
+      // Regras do casal (tela Regras): ignorar, categoria e nova descrição.
+      const r = aplicarRegras(regrasCasal, { descricao: t.descricao, valor: t.valor }, categoriasValidas);
+      const par = transferencias.pares.get(externa.id);
+      if (r?.ignorar) s = { ...s, acao: "ignorar", vinculo_id: null, motivo: `regra: ${r.regras[0]}` };
+      else if (par && s.motivo !== "pagamento de fatura") {
+        const outra = porId.get(par);
+        s = {
+          ...s,
+          acao: "ignorar",
+          vinculo_id: null,
+          motivo: `transferência entre contas de vocês (${outra ? nomeConta(outra.conta_externa_id) : "outra conta"})`,
+        };
+      } else if (r) {
+        if (s.acao === "novo" && r.categoria_id) s = { ...s, categoria_id: r.categoria_id, motivo: `regra: ${r.regras[0]}` };
+        else if (s.acao === "novo") s = { ...s, motivo: `regra: ${r.regras[0]}` };
+      } else if (transferencias.ambiguos.has(externa.id) && !s.motivo) {
+        s = { ...s, motivo: "talvez transferência entre contas de vocês" };
+      }
+      if (r?.descricao) t.descricao = r.descricao;
+    }
     if (s.vinculo_id) usados.add(s.vinculo_id);
     // Sem regra aprendida: pacote de lojas conhecidas e, por fim, a categoria da Pluggy.
     const categoria =
@@ -103,7 +146,7 @@ export async function carregarCaixa(casa: Casa, categorias: Categoria[]): Promis
       racha_tipo: s.racha_tipo ?? ((t.valor < 0 ? "juiz" : "mensalidade") as RachaTipo),
       vinculo_id: s.vinculo_id ?? "",
       motivo: s.motivo,
-      padrao: padraoDe(t),
+      padrao,
       externa,
       conta,
     };
@@ -138,7 +181,7 @@ export async function confirmarCaixa(casa: Casa, membro: Membro, linhas: Record<
 /** Confirma sozinhas as transações que batem com uma regra aprendida. Devolve quantas. */
 export async function aplicarRegrasAutomaticas(casa: Casa, membro: Membro, categorias: Categoria[]): Promise<number> {
   const { linhas } = await carregarCaixa(casa, categorias);
-  const porRegra = linhas.filter((l) => l.motivo === "regra aprendida" && (l.acao !== "vincular" || l.vinculo_id));
+  const porRegra = linhas.filter((l) => (l.motivo === "regra aprendida" || l.motivo.startsWith("regra: ")) && (l.acao !== "vincular" || l.vinculo_id));
   if (!porRegra.length) return 0;
   await confirmarCaixa(casa, membro, porRegra.map(paraConfirmacao), true);
   return porRegra.length;

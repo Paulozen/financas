@@ -104,3 +104,10 @@ Integração feita em 6 etapas (detalhes em `DECISOES.md`): reconhecimento da AP
 - [x] Categorias: sugerir limites e resumo do orçamento
 - [x] Análises: tendência por categoria e mapa do dinheiro
 - [x] "Tudo em dia!" e variação por categoria contra o mês anterior
+
+## Código portado do Securo
+
+- [x] Motor de regras e tela Regras (prévia, ligar/desligar, aplicar às compras sem categoria) (migração 009)
+- [x] Transferências entre contas de vocês sugeridas como Ignorar na caixa de entrada
+- [x] Situação das metas pela fórmula do Securo (ponto de partida)
+- [x] Estornos descontam da categoria; desempate por semelhança de descrição; regras do pacote Brasil

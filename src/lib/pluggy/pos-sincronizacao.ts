@@ -9,6 +9,7 @@ import { mesDe } from "../datas";
 import { padraoDe } from "../importacao/sugestao";
 import { previsaoFaturas, type CompraCartao } from "./cartao";
 import { categoriaDoPacote } from "../pacote-regras";
+import { aplicarRegras, type Regra } from "../regras";
 import { categoriaDaPluggy } from "./categorias";
 import { chaveGrupo, contaNoTotal, nomeGrupo, saldoPorReserva, type InvestimentoGrupo } from "./grupos";
 
@@ -114,16 +115,19 @@ async function categorizarComprasDeCartao(sb: SupabaseClient, casaId: string) {
     await sb.from("transacoes_externas").select("id, descricao, valor, categoria_pluggy").eq("casa_id", casaId).eq("situacao", "cartao").is("categoria_id", null),
   ) as { id: string; descricao: string; valor: number; categoria_pluggy: string | null }[];
   if (!semCategoria.length) return;
-  const [categorias, regras] = await Promise.all([
+  const [categorias, regras, regrasCasal] = await Promise.all([
     sb.from("categorias").select("id, nome, tipo, ativa").eq("casa_id", casaId).then(checar),
     sb.from("regras_importacao").select("padrao, categoria_id").eq("casa_id", casaId).not("categoria_id", "is", null).then(checar),
+    sb.from("regras").select("*").eq("casa_id", casaId).eq("ativa", true).then(checar),
   ]);
+  const validas = new Set((categorias as { id: string; ativa: boolean }[]).filter((c) => c.ativa).map((c) => c.id));
   const porRegra = new Map((regras as { padrao: string; categoria_id: string }[]).map((r) => [r.padrao, r.categoria_id]));
   const grupos = new Map<string, string[]>();
   for (const t of semCategoria) {
     if (t.valor <= 0) continue; // pagamentos e estornos não ganham categoria de gasto
     const cat =
       porRegra.get(padraoDe(t)) ??
+      aplicarRegras(regrasCasal as Regra[], { descricao: t.descricao, valor: -t.valor }, validas)?.categoria_id ??
       categoriaDoPacote(t.descricao, categorias as { id: string; nome: string; tipo: string; ativa: boolean }[]) ??
       categoriaDaPluggy(t.categoria_pluggy, "saida", categorias as { id: string; nome: string; tipo: string; ativa: boolean }[]);
     if (cat) grupos.set(cat, [...(grupos.get(cat) ?? []), t.id]);

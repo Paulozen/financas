@@ -38,6 +38,7 @@ export function resumoMeta({
   inicio,
   historico,
   hoje,
+  base,
 }: {
   saldo: number;
   meta: number;
@@ -45,6 +46,8 @@ export function resumoMeta({
   inicio: string;
   historico: { data: string; valor: number }[];
   hoje: string;
+  /** ponto de partida da meta: quando foi definida e quanto já havia guardado */
+  base?: { desde: string; inicial: number } | null;
 }): ResumoMeta {
   const falta = Math.max(0, meta - saldo);
   const progresso = meta > 0 ? saldo / meta : 0;
@@ -67,18 +70,33 @@ export function resumoMeta({
   else {
     const meses = Math.max(1, difMeses(mesDe(hoje), mesDe(data)));
     porMes = Math.ceil(falta / meses);
-    let razao: number;
-    if (ritmo !== null) {
-      // Com histórico: o ritmo dos últimos meses dá conta do que falta por mês?
-      razao = ritmo / porMes;
+    if (base) {
+      // Fórmula do Securo: progresso medido a partir do que havia quando a meta foi definida,
+      // contra a linha reta até a data, com tolerância de 5% do que faltava juntar.
+      const precisa = meta - base.inicial;
+      const total = difDias(base.desde, data);
+      if (precisa <= 0) situacao = "concluida";
+      else if (total <= 0) situacao = "no_ritmo";
+      else {
+        const esperado = precisa * (Math.max(0, difDias(base.desde, hoje)) / total);
+        const diferenca = saldo - base.inicial - esperado;
+        const tolerancia = precisa * 0.05;
+        situacao = diferenca >= tolerancia * 2 ? "adiantada" : diferenca >= -tolerancia ? "no_ritmo" : "atrasada";
+      }
     } else {
-      // Sem histórico: caminho em linha reta do início até a data (onde deveria estar hoje).
-      const total = Math.max(1, difDias(inicio, data));
-      const decorrido = Math.min(total, Math.max(0, difDias(inicio, hoje)));
-      const esperado = meta * (decorrido / total);
-      razao = esperado > 0 ? saldo / esperado : 1;
+      let razao: number;
+      if (ritmo !== null) {
+        // Com histórico: o ritmo dos últimos meses dá conta do que falta por mês?
+        razao = ritmo / porMes;
+      } else {
+        // Sem histórico: caminho em linha reta do início até a data (onde deveria estar hoje).
+        const total = Math.max(1, difDias(inicio, data));
+        const decorrido = Math.min(total, Math.max(0, difDias(inicio, hoje)));
+        const esperado = meta * (decorrido / total);
+        razao = esperado > 0 ? saldo / esperado : 1;
+      }
+      situacao = razao >= 1.1 ? "adiantada" : razao >= 0.95 ? "no_ritmo" : "atrasada";
     }
-    situacao = razao >= 1.1 ? "adiantada" : razao >= 0.95 ? "no_ritmo" : "atrasada";
   }
   return { saldo, meta, progresso, falta, situacao, porMes, ritmo, previsao };
 }

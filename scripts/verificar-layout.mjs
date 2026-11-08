@@ -27,7 +27,7 @@ const PASTA = path.join(raiz, "e2e-capturas");
 if (CAPTURAS) fs.mkdirSync(PASTA, { recursive: true });
 
 const SO_ROTAS = process.env.ROTAS?.split(",").filter(Boolean);
-const TELAS = SO_ROTAS ?? ["/", "/analises", "/categorizar", "/lancamentos", "/compromissos", "/projetos", "/mais", "/caixa", "/reservas", "/racha", "/importar", "/categorias", "/configuracoes"];
+const TELAS = SO_ROTAS ?? ["/", "/analises", "/categorizar", "/regras", "/lancamentos", "/compromissos", "/projetos", "/mais", "/caixa", "/reservas", "/racha", "/importar", "/categorias", "/configuracoes"];
 const TAMANHOS = [
   { width: 360, height: 800 },
   { width: 390, height: 844 },
